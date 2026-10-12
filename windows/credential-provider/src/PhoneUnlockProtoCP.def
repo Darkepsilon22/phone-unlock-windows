@@ -1,0 +1,4 @@
+LIBRARY PhoneUnlockProtoCP
+EXPORTS
+    DllCanUnloadNow PRIVATE
+    DllGetClassObject PRIVATE
