@@ -1,0 +1,32 @@
+# Secrets et clés de signature : ne jamais versionner
+*.jks
+*.keystore
+*.pfx
+*.p12
+*.pem
+*.key
+local.properties
+secrets/
+
+# Build C++ / .NET
+build/
+out/
+bin/
+obj/
+x64/
+*.user
+*.suo
+.vs/
+CMakeUserPresets.json
+
+# Android / Gradle
+.gradle/
+*.apk
+*.aab
+captures/
+.idea/
+
+# VM et journaux
+*.log
+*.vdi
+*.vbox-prev
