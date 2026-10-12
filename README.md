@@ -33,6 +33,6 @@ un Credential Provider Windows soumet ensuite les identifiants au système.
 ## État
 
 - [x] L0 : outils, VM de test, instantané propre
-- [ ] L1 : prototype Credential Provider dans la VM (jalon bloquant)
+- [x] L1 : prototype Credential Provider dans la VM, validé si Hello uniquement est désactivé ([rapport](docs/rapport-jalon-L1.md))
 - [ ] L2 : spécification du protocole
 - [ ] L3 : application Android
