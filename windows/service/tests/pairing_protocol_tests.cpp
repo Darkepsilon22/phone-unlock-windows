@@ -1,10 +1,34 @@
 #include "pairing/pairing_protocol.h"
+#include "encoding/text.h"
 #include "test_runner.h"
 #include <string_view>
 
 namespace
 {
 using pairing_protocol::ParseEndpoint;
+
+crypto::Digest Filled(uint8_t value)
+{
+    crypto::Digest digest;
+    digest.fill(value);
+    return digest;
+}
+
+TEST(QrTextMatchesReferenceVector)
+{
+    const std::string text = pairing_protocol::QrText(cbor::Bytes(16, 0x11), Filled(0), cbor::Bytes(32, 0x22),
+        { { "10.0.0.2", 47863 } });
+    CHECK(text == "phoneunlock:1:pQEBAlARERERERERERERERERERERA1ggAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEWCAi"
+                  "IiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIgWBgmgxMC4wLjAuMhm69w");
+}
+
+TEST(TranscriptAndCodeMatchReferenceVector)
+{
+    const crypto::Digest transcript = *pairing_protocol::Transcript(cbor::Bytes(16, 1), Filled(2), Filled(3), Filled(4),
+        cbor::Bytes(32, 5), cbor::Bytes(16, 6));
+    CHECK(HexFromBytes(transcript) == L"a5525aa572b00afb421f320c95677ee35dca2645caeae64b4d7473bd6761e803");
+    CHECK(pairing_protocol::ComparisonCode(transcript) == L"637797");
+}
 
 TEST(ParsesEndpointWithAndWithoutPort)
 {
