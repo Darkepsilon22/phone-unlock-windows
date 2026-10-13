@@ -18,6 +18,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 - La tuile et le service ne sont installés **que dans la VM** `win11-test` (VirtualBox, sans Hyper-V). Les scripts `vm-install-*` refusent toute autre machine.
 - Prendre un instantané avant chaque installation.
 - Une capture d'écran ne suffit pas : la preuve est le journal (`cp.log`, `service.log`) avec les codes renvoyés par Windows.
+- Le TPM virtuel de VirtualBox peut être réinitialisé après un instantané : Windows annonce alors « Votre PIN n'est plus disponible ». Constaté le 13/10/2026 au démarrage, avant toute installation (journal Hello : `État : TPM Cleared`). Se connecter par mot de passe et reconfigurer le PIN.
 
 ### Procédures validées
 
