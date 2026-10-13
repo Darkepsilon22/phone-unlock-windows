@@ -1,0 +1,31 @@
+name: Windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Récupérer vcpkg à la version de référence
+        uses: actions/checkout@v4
+        with:
+          repository: microsoft/vcpkg
+          ref: e456309491fd875487bf02b8a0dca76c1b1b00cc
+          path: vcpkg
+
+      - name: Préparer vcpkg
+        shell: pwsh
+        run: ./vcpkg/bootstrap-vcpkg.bat -disableMetrics
+
+      - name: Compiler et tester
+        shell: pwsh
+        run: |
+          $env:VCPKG_ROOT = Join-Path $PWD 'vcpkg'
+          ./scripts/build-windows.ps1

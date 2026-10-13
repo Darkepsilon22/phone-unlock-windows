@@ -1,39 +1,65 @@
-# Déverrouillage Windows par téléphone
+# Empreinte : déverrouillage Windows par téléphone
 
-Projet personnel gratuit (cahier des charges v1.1, `docs/Cahier_des_charges.pdf`).
-Le téléphone Android autorise, par biométrie forte, une demande de connexion signée ;
-un Credential Provider Windows soumet ensuite les identifiants au système.
+Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (compte Microsoft) avec l'empreinte d'un téléphone Android, sur le réseau local et sans service cloud. Le téléphone signe une demande après biométrie, et une tuile Windows soumet alors le mot de passe du compte, conservé chiffré par un service local. Windows reste seul juge de l'ouverture de session.
+
+**État : prototype.** Ne pas installer sur un PC principal. Lire [docs/security.md](docs/security.md) avant tout usage.
+
+## Documentation
+
+| Document | Contenu |
+|---|---|
+| [docs/Cahier_des_charges.pdf](docs/Cahier_des_charges.pdf) | Besoin et exigences (v1.1) |
+| [protocol/SPEC.md](protocol/SPEC.md) | Protocole téléphone ↔ PC |
+| [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
+| [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
+| [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
+| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D8) |
+| [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
 
 ## Structure
 
-| Dossier | Contenu | Lot |
-|---|---|---|
-| `protocol/` | Spécification du protocole (CBOR, ECDSA P-256, TLS mutuel) | L2 |
-| `android/` | Application Kotlin / Compose / AndroidX Biometric | L3 |
-| `windows/shared/` | Code commun C++ : canal local (pipe), journal, mémoire effacée | L4 |
-| `windows/credential-provider/` | DLL COM C++ chargée par LogonUI | L1, L4 |
-| `windows/service/` | Service Windows C++ (réseau, preuve, secrets) | L4 |
-| `windows/config-tool/` | Assistant C# .NET (diagnostic, révocation, historique) | L4 |
-| `windows/installer/` | Installeur WiX | L5 |
-| `tests/` | Recette T01 à T26 et preuves | L6 |
-| `scripts/` | Outils de build et de test | |
+| Dossier | Contenu |
+|---|---|
+| `android/` | Application Kotlin, Jetpack Compose, AndroidX Biometric |
+| `windows/shared/` | Code C++ commun : canal local, journal, mémoire effacée |
+| `windows/credential-provider/` | Tuile Windows (DLL COM chargée par LogonUI) |
+| `windows/service/` | Service Windows : coffre, association, API HTTPS, commandes d'administration, tests |
+| `protocol/` | Spécification du protocole |
+| `scripts/` | Compilation Windows et installation dans la VM de test |
+| `docs/` | Documentation |
 
-## Règles de sécurité du dépôt
+## Prérequis (gratuits)
 
-- Aucune clé de signature, aucun mot de passe, aucun secret dans le dépôt.
-- Le Credential Provider n'est installé **que dans la VM `win11-test`** (VirtualBox), jamais sur le PC principal avant validation du jalon L1.
-- Avant chaque essai dans la VM : restaurer ou prendre un instantané (`01-propre-hello`).
+- Windows 11 x64, VS Code
+- Visual Studio Build Tools 2022 (MSVC, Windows SDK, CMake)
+- vcpkg : chemin donné par la variable `VCPKG_ROOT` (par défaut `E:\dev\vcpkg` dans le script)
+- Android Studio ou SDK Android, JDK 21 ; Gradle est fourni par le wrapper
+- VirtualBox pour les tests Windows (pas d'Hyper-V)
+- Un téléphone Android 11 ou plus avec empreinte de classe forte
 
-## Environnement de développement
+## Compiler et tester
 
-- VS Code, Build Tools 2022 (MSVC 14.44), Windows SDK 10.0.26100, CMake, vcpkg (`E:\dev\vcpkg`)
-- .NET SDK 8 / 10, WiX (`dotnet tool`), WinDbg
-- Android Studio, JDK 21, Gradle, adb
-- VM : `E:\VMs\win11-test` (Windows 11 Famille, compte Microsoft, Hello uniquement activé)
+```powershell
+scripts\build-windows.ps1                  # compile la tuile et le service, lance les 36 tests, prépare build\deploy
+scripts\build-windows.ps1 -TestCommands    # variante de test avec la commande authorize (jamais sur un vrai PC)
 
-## État
+cd android
+.\gradlew.bat assembleDebug testDebugUnitTest
+.\gradlew.bat installDebug                 # téléphone branché, débogage USB activé
+```
 
-- [x] L0 : outils, VM de test, instantané propre
-- [x] L1 : prototype Credential Provider dans la VM, validé si Hello uniquement est désactivé ([rapport](docs/rapport-jalon-L1.md))
-- [x] L2 : spécification du protocole ([SPEC.md](protocol/SPEC.md))
-- [ ] L3 : application Android (étape 1 faite : clé StrongBox et signature biométrique validées sur Pixel 5)
+Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâche).
+
+## Avancement
+
+- [x] L0 : outils, VM de test
+- [x] L1 : faisabilité Windows, compte Microsoft en ligne et hors ligne, à condition de désactiver Hello uniquement
+- [x] L2 : spécification du protocole
+- [ ] L3 : application Android (clé StrongBox et signature biométrique validées ; association et déverrouillage à faire)
+- [ ] L4 : service et tuile (coffre, canaux locaux et soumission automatique validés ; HTTPS et association écrits et testés unitairement, **non validés en VM**)
+- [ ] L5 : installeur signé
+- [ ] L6 : recette
+
+## Limitations connues
+
+Hello uniquement doit être désactivé. Le mot de passe du compte est conservé chiffré sur le PC. Le mot de passe n'est pas encore vérifié lors de l'enregistrement. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md).

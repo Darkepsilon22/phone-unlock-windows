@@ -1,0 +1,55 @@
+# Sécurité
+
+## Principe
+
+La biométrie autorise une clé du téléphone, la clé autorise une demande précise, et **Windows reste seul juge** de l'ouverture de session. Le produit ne contourne aucun mécanisme Windows. Il soumet le mot de passe du compte, conservé chiffré sur le PC.
+
+## Risque principal accepté
+
+Le mot de passe du compte Microsoft est **récupérable par le service** : il est chiffré par DPAPI dans le contexte du compte de service, et seul ce compte peut le déchiffrer. Un attaquant qui obtient les droits administrateur ou SYSTEM peut le récupérer, et donc accéder au compte Microsoft en ligne, pas seulement au PC. Ce risque est inhérent à l'architecture choisie dans le cahier des charges et doit être accepté explicitement avant toute utilisation sur le PC principal.
+
+## Clés et secrets
+
+| Élément | Emplacement | Protection |
+|---|---|---|
+| Mot de passe Windows | `ProgramData\PhoneUnlock\secrets\<SID>.bin` | DPAPI du service, entropie = SID, ACL : SYSTEM, Administrateurs, service |
+| Identité du PC | Magasin `LocalMachine\My`, `CN=PhoneUnlock PC` | ECDSA P-256, clé non exportable |
+| Associations | `ProgramData\PhoneUnlock\state\pairings` | Données publiques (empreintes, clés publiques, SID) ; ACL restreintes |
+| Clé d'autorisation du téléphone | Android Keystore | StrongBox si disponible, empreinte forte à chaque signature, invalidée à l'ajout d'une empreinte, exclue des sauvegardes |
+| Mot de passe en mémoire | Service et tuile | Copies limitées, effacées (`SecureZeroMemory`), protégé par `CredProtect` avant sérialisation |
+
+Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
+
+## Menaces du cahier des charges
+
+| Menace | État | Mesures |
+|---|---|---|
+| S01 rejeu | Partiel | Autorisation à usage unique et 30 s (fait) ; nonce et contexte signés (lot 2b) |
+| S02 usurpation | Partiel | Empreintes épinglées, TLS 1.3 mutuel, code à 6 chiffres (côté PC fait, non validé en VM) |
+| S03 téléphone perdu | Partiel | Biométrie par opération (validée sur Pixel 5) ; révocation à réaliser |
+| S04 commande forgée | À faire | Signature vérifiée par le PC (lot 2b) |
+| S05 mauvais compte | Partiel | Autorisation liée au SID ; `context_id` à réaliser |
+| S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret |
+| S07 détournement de l'IPC | Fait | Deux canaux à ACL distinctes, vérification du serveur par la tuile, échec fermé si le descripteur de sécurité ne peut pas être construit |
+| S08 saturation | Partiel | 16 Ko, 8 requêtes simultanées, 3 essais d'association ; quotas par compte à réaliser |
+| S09 mise à jour malveillante | À faire | Signature des paquets (lot L5) |
+| S10 nouvelle biométrie | Fait | Clé invalidée à l'enrôlement (Android) |
+| S11 blocage du PC | Partiel | Fournisseurs Windows conservés et tuile sans appel bloquant (constaté en VM) ; désinstallation et plantage du service pas encore testés |
+| S12 mauvaise demande | Partiel | Voir D1 ; noms signés et historique à réaliser |
+
+## Conditions et limites connues
+
+- **Hello uniquement** doit être désactivé sur le PC, sinon Windows refuse la connexion par mot de passe (`0xC000015B`, rapport L1).
+- Le mot de passe doit avoir servi **une fois en ligne** sur le PC pour que l'ouverture hors ligne fonctionne.
+- **Mot de passe non vérifié à l'enregistrement** (`provision`) : à corriger avant usage réel. Pour l'instant, une erreur n'apparaît qu'à la première connexion.
+- **Pixel 5** : plus de correctifs de sécurité depuis novembre 2023.
+- Le même Wi-Fi ne prouve pas la proximité. Un déverrouillage depuis le téléphone ouvre la session pour la personne devant le PC (D1).
+- BitLocker n'a pas été testé avec le produit : il a été désactivé dans la VM à cause des instantanés VirtualBox.
+- La commande de test `authorize` existe uniquement dans les compilations `-TestCommands` (D7). Ne jamais déployer une telle compilation sur le PC principal.
+
+## Récupération
+
+- Le PIN, Windows Hello et le mot de passe restent toujours disponibles : la tuile ne remplace aucun fournisseur.
+- Désactiver le produit : `vm-uninstall-cp.ps1` puis `vm-uninstall-service.ps1`. Le service, la liaison TLS, le pare-feu, le certificat, les associations et les secrets sont retirés.
+- En VM : restaurer un instantané (`VBoxManage snapshot win11-test restore <nom>`).
+- Le produit n'est jamais installé sur le PC principal avant validation complète, et uniquement avec ton accord.

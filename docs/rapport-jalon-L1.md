@@ -17,7 +17,7 @@ Démontrer qu'un Credential Provider tiers peut ouvrir une session Windows 11 po
 | Protections | Defender actif, Secure Boot, TPM 2.0 virtuel, Smart App Control désactivé (comme le PC cible) |
 | BitLocker | Désactivé dans la VM uniquement (voir Limites) |
 | Prototype | `windows/credential-provider`, DLL `PhoneUnlockProtoCP.dll`, CLSID `{512D55BA-432F-42D6-95EF-8071913597AA}` |
-| Sérialisation | `CredPackAuthenticationBufferW` (`CRED_PACK_PROTECTED_CREDENTIALS \| CRED_PACK_ID_PROVIDER_CREDENTIALS`), paquet Negotiate |
+| Sérialisation | `CredPackAuthenticationBufferW` (`CRED_PACK_PROTECTED_CREDENTIALS \| CRED_PACK_ID_PROVIDER_CREDENTIALS`), paquet Negotiate. Remplacée le 13/10/2026 par `KERB_INTERACTIVE_UNLOCK_LOGON` (voir le complément ci-dessous et la décision D6) |
 
 ## Résultats
 

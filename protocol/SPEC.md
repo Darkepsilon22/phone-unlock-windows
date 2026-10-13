@@ -259,6 +259,7 @@ Toute réponse d'erreur porte un corps `{ 1: error-code }`.
 | `PC_UNREACHABLE` | — | côté téléphone uniquement : connexion impossible |
 | `RATE_LIMITED` | 429 | quota dépassé (ajout au cahier, §7) |
 | `TOO_LARGE` | 413 | corps supérieur à 16 384 octets (ajout au cahier, §7) |
+| `UNSUPPORTED_TLS` | 403 | connexion négociée sans TLS 1.3 (ajout au cahier, §8, décision D5) |
 
 ## 7. Limites et quotas
 
@@ -270,7 +271,8 @@ Toute réponse d'erreur porte un corps `{ 1: error-code }`.
 
 ## 8. Réseau
 
-- Le pare-feu autorise le port uniquement pour le service et uniquement depuis le sous-réseau local ; le profil Public est conservé. Le TLS mutuel épinglé reste la seule preuve d'identité.
+- Le pare-feu autorise le port 47863/TCP uniquement depuis le sous-réseau local ; le profil Public est conservé. Le serveur HTTPS de Windows (`http.sys`) s'exécute dans le noyau : la règle ne peut donc pas être restreinte au processus du service. Le TLS mutuel épinglé reste la seule preuve d'identité.
+- Le service refuse toute requête dont le protocole négocié n'est pas TLS 1.3 (`UNSUPPORTED_TLS`), même si la configuration de Windows autorise TLS 1.2.
 - Aucune découverte réseau générale, aucun UPnP, aucun relais Internet.
 - Si l'adresse du PC change, l'utilisatrice la ressaisit ou rescanne un QR de reconnexion, qui ne contient pas de jeton d'association.
 
