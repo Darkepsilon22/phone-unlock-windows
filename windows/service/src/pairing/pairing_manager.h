@@ -3,6 +3,7 @@
 #include "network/http_server.h"
 #include "pairing/pairing_protocol.h"
 #include "storage/pairing_store.h"
+#include "support/clock.h"
 #include "pairing/pc_identity.h"
 #include <mutex>
 #include <optional>
@@ -29,7 +30,7 @@ struct PairingStatus
 class PairingManager
 {
 public:
-    PairingManager(PcIdentity identity, PairingStore& store);
+    PairingManager(PcIdentity identity, PairingStore& store, MonotonicClock clock = SystemMilliseconds);
 
     std::optional<std::string> Start(const std::wstring& accountSid,
         const std::vector<pairing_protocol::Endpoint>& endpoints);
@@ -59,6 +60,7 @@ private:
 
     PcIdentity identity_;
     PairingStore& store_;
+    MonotonicClock clock_;
     std::mutex mutex_;
     Session session_;
 };

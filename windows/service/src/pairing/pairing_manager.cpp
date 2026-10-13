@@ -80,7 +80,8 @@ const cbor::Map* DecodeMap(const HttpRequest& request, std::optional<cbor::Value
 }
 }
 
-PairingManager::PairingManager(PcIdentity identity, PairingStore& store) : identity_(std::move(identity)), store_(store)
+PairingManager::PairingManager(PcIdentity identity, PairingStore& store, MonotonicClock clock)
+    : identity_(std::move(identity)), store_(store), clock_(std::move(clock))
 {
 }
 
@@ -97,7 +98,7 @@ std::optional<std::string> PairingManager::Start(const std::wstring& accountSid,
     session_ = Session{};
     session_.accountSid = accountSid;
     session_.token = *token;
-    session_.expiresAt = GetTickCount64() + SessionLifetime;
+    session_.expiresAt = clock_() + SessionLifetime;
     session_.attemptsLeft = MaxAttempts;
     session_.stage = PairingStage::WaitingForPhone;
     LogLine(L"pairing started");
@@ -251,7 +252,7 @@ void PairingManager::ExpireIfNeeded()
 {
     const bool pending = session_.stage == PairingStage::WaitingForPhone ||
         session_.stage == PairingStage::AwaitingConfirmation || session_.stage == PairingStage::PcConfirmed;
-    if (pending && GetTickCount64() >= session_.expiresAt)
+    if (pending && clock_() >= session_.expiresAt)
     {
         Fail(L"expired");
     }

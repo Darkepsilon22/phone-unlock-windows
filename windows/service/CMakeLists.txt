@@ -45,10 +45,14 @@ add_executable(PhoneUnlockService src/host/main.cpp)
 target_link_libraries(PhoneUnlockService PRIVATE PhoneUnlockServiceCore)
 
 add_executable(PhoneUnlockServiceTests
+    tests/authorization_broker_tests.cpp
     tests/cbor_tests.cpp
     tests/crypto_tests.cpp
+    tests/pairing_manager_tests.cpp
     tests/pairing_protocol_tests.cpp
+    tests/pairing_store_tests.cpp
     tests/test_runner.cpp
+    tests/test_support.cpp
 )
 target_link_libraries(PhoneUnlockServiceTests PRIVATE PhoneUnlockServiceCore)
 add_test(NAME PhoneUnlockServiceTests COMMAND PhoneUnlockServiceTests)
