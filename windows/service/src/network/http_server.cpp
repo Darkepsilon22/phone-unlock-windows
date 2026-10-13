@@ -1,5 +1,7 @@
 #include "network/http_server.h"
 #include "log.h"
+#include "network/api_errors.h"
+#include <schannel.h>
 #include <array>
 
 namespace
@@ -11,6 +13,7 @@ constexpr size_t ClientCertificateBufferSize = 8 * 1024;
 constexpr size_t MaxConcurrentRequests = 8;
 constexpr USHORT TooManyRequests = 503;
 constexpr USHORT TooLarge = 413;
+constexpr char UnsupportedTlsCode[] = "UNSUPPORTED_TLS";
 constexpr char ContentType[] = "application/cbor";
 
 const char* ReasonFor(USHORT status)
@@ -43,6 +46,26 @@ const char* ReasonFor(USHORT status)
 std::wstring FromCounted(PCWSTR text, USHORT lengthInBytes)
 {
     return text ? std::wstring(text, lengthInBytes / sizeof(wchar_t)) : std::wstring();
+}
+
+bool NegotiatedTls13(const HTTP_REQUEST& request)
+{
+    for (USHORT index = 0; index < request.RequestInfoCount; ++index)
+    {
+        const HTTP_REQUEST_INFO& info = request.pRequestInfo[index];
+        if (info.InfoType == HttpRequestInfoTypeSslProtocol && info.pInfo)
+        {
+            const auto* protocol = static_cast<const HTTP_SSL_PROTOCOL_INFO*>(info.pInfo);
+            if ((protocol->Protocol & SP_PROT_TLS1_3_SERVER) == 0)
+            {
+                LogLine(L"https request refused tls protocol=0x%08X", protocol->Protocol);
+                return false;
+            }
+            return true;
+        }
+    }
+    LogLine(L"https request refused tls protocol unknown");
+    return false;
 }
 }
 
@@ -172,6 +195,12 @@ bool HttpServer::ReceiveNext(HANDLE stopEvent)
     {
         LogLine(L"https receive failed error=%lu", result);
         return result != ERROR_OPERATION_ABORTED && result != ERROR_INVALID_HANDLE;
+    }
+
+    if (!NegotiatedTls13(*request))
+    {
+        Send(request->RequestId, api_errors::Error(api_errors::Forbidden, UnsupportedTlsCode));
+        return true;
     }
 
     HttpRequest copy;
