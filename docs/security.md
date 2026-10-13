@@ -16,6 +16,10 @@ Le mot de passe du compte Microsoft est **récupérable par le service** : il es
 | Identité du PC | Magasin `LocalMachine\My`, `CN=PhoneUnlock PC` | ECDSA P-256, clé non exportable |
 | Associations | `ProgramData\PhoneUnlock\state\pairings` | Données publiques (empreintes, clés publiques, SID) ; ACL restreintes |
 | Clé d'autorisation du téléphone | Android Keystore | StrongBox si disponible, empreinte forte à chaque signature, invalidée à l'ajout d'une empreinte, exclue des sauvegardes |
+| Clé de transport du téléphone | Android Keystore | ECDSA P-256 non exportable, sans biométrie, sert uniquement de certificat client TLS |
+| Association côté téléphone | Fichier privé de l'application `pairing.cbor` | Données publiques (identifiant et empreinte du PC, adresses, noms) ; exclu des sauvegardes |
+
+Le téléphone n'accepte que le PC dont l'empreinte figure dans le QR code : son gestionnaire de confiance TLS compare `SHA-256(SubjectPublicKeyInfo)` du certificat présenté à l'empreinte épinglée, et la vérification du nom d'hôte est volontairement remplacée par cette comparaison (avertissements Lint `CustomX509TrustManager` et `BadHostnameVerifier` acquittés en connaissance de cause). Le client n'active que TLS 1.3.
 | Mot de passe en mémoire | Service et tuile | Copies limitées, effacées (`SecureZeroMemory`), protégé par `CredProtect` avant sérialisation |
 
 Aucun secret n'est écrit dans les journaux ni passé en argument de processus.

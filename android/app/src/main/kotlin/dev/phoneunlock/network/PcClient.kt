@@ -3,6 +3,7 @@ package dev.phoneunlock.network
 import dev.phoneunlock.encoding.Cbor
 import dev.phoneunlock.pairing.Endpoint
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.net.URI
 import javax.net.ssl.HttpsURLConnection
@@ -20,9 +21,13 @@ class PcResponse(val status: Int, val body: Cbor.Object?) {
     }
 }
 
-class PcClient(private val socketFactory: SSLSocketFactory) {
+fun interface PcConnection {
+    fun post(endpoint: Endpoint, path: String, body: Cbor): PcResponse
+}
 
-    fun post(endpoint: Endpoint, path: String, body: Cbor): PcResponse {
+class PcClient(private val socketFactory: SSLSocketFactory) : PcConnection {
+
+    override fun post(endpoint: Endpoint, path: String, body: Cbor): PcResponse {
         val payload = Cbor.encode(body)
         val url = URI(SCHEME, null, endpoint.host, endpoint.port, path, null, null).toURL()
         val connection = url.openConnection() as HttpsURLConnection
@@ -41,10 +46,16 @@ class PcClient(private val socketFactory: SSLSocketFactory) {
             val status = connection.responseCode
             val stream = if (status in SUCCESS_STATUS) connection.inputStream else connection.errorStream
             val bytes = stream?.use(::readLimited) ?: ByteArray(0)
-            return PcResponse(status, if (bytes.isEmpty()) null else Cbor.decode(bytes) as? Cbor.Object)
+            return PcResponse(status, decodeObject(bytes))
         } finally {
             connection.disconnect()
         }
+    }
+
+    private fun decodeObject(bytes: ByteArray): Cbor.Object? = try {
+        Cbor.decode(bytes) as? Cbor.Object
+    } catch (malformed: IllegalArgumentException) {
+        null
     }
 
     private fun readLimited(input: InputStream): ByteArray {
@@ -55,7 +66,9 @@ class PcClient(private val socketFactory: SSLSocketFactory) {
             if (read < 0) {
                 return out.toByteArray()
             }
-            require(out.size() + read <= MAX_RESPONSE_SIZE) { "Réponse du PC trop volumineuse" }
+            if (out.size() + read > MAX_RESPONSE_SIZE) {
+                throw IOException("Réponse du PC trop volumineuse")
+            }
             out.write(buffer, 0, read)
         }
     }

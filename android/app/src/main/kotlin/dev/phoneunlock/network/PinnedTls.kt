@@ -1,5 +1,6 @@
 package dev.phoneunlock.network
 
+import android.annotation.SuppressLint
 import dev.phoneunlock.pairing.PairingProtocol
 import java.net.InetAddress
 import java.net.Socket
@@ -16,6 +17,7 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.X509KeyManager
 import javax.net.ssl.X509TrustManager
 
+@SuppressLint("CustomX509TrustManager")
 class PinnedServerTrust(private val pinnedFingerprint: ByteArray) : X509TrustManager {
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
@@ -34,6 +36,7 @@ class PinnedServerTrust(private val pinnedFingerprint: ByteArray) : X509TrustMan
 }
 
 object PinnedKeyReplacesHostnameCheck : HostnameVerifier {
+    @SuppressLint("BadHostnameVerifier")
     override fun verify(hostname: String?, session: SSLSession?): Boolean = true
 }
 

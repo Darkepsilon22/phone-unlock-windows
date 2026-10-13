@@ -38,7 +38,14 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 ### Procédures à exécuter
 
-**Association avec le téléphone** : à rédiger avec la partie Android.
+**Association avec le téléphone (VM et Pixel 5)**
+1. Téléphone sur le même Wi-Fi que le PC hôte. Installer l'application : `android\gradlew.bat installDebug`.
+2. Dans la VM, en administrateur : `PhoneUnlockService.exe pair --endpoint <IP du PC hôte>:47863`.
+3. Dans l'application : « Associer un PC », autoriser la caméra, scanner le QR.
+4. Le téléphone et la console affichent le même code à 6 chiffres. Répondre `o` sur le PC, puis « Le code est identique : confirmer » et poser le doigt.
+5. Preuves : la console affiche « Association enregistrée », `service.log` contient `pairing completed`, un fichier apparaît dans `C:\ProgramData\PhoneUnlock\state\pairings`, l'accueil de l'application affiche le PC et le compte.
+
+Cas d'échec à vérifier : confirmer sur le téléphone avant le PC (message « Réponds d'abord o sur le PC »), répondre `n` sur le PC, annuler l'empreinte, scanner un QR expiré (plus de 2 minutes), scanner un autre QR code.
 
 **Désinstallation** : `vm-uninstall-cp.ps1` et `vm-uninstall-service.ps1`, redémarrage, puis connexion par PIN.
 
