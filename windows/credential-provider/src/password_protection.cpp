@@ -1,4 +1,4 @@
-#include "secure_string.h"
+#include "password_protection.h"
 
 namespace
 {

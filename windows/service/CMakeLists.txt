@@ -1,13 +1,22 @@
 find_package(unofficial-nayuki-qr-code-generator CONFIG REQUIRED)
 
+option(PHONEUNLOCK_TEST_COMMANDS "Inclut la commande de test authorize qui simule le telephone" OFF)
+
 add_library(PhoneUnlockServiceCore STATIC
     src/admin/admin_commands.cpp
+    src/admin/console.cpp
+    src/admin/current_user.cpp
+    src/admin/local_endpoints.cpp
+    src/admin/pair_command.cpp
     src/admin/qr_console.cpp
+    src/admin/service_client.cpp
     src/crypto/crypto.cpp
     src/encoding/cbor.cpp
     src/encoding/text.cpp
     src/host/service_host.cpp
+    src/ipc/admin_requests.cpp
     src/ipc/authorization_broker.cpp
+    src/ipc/logon_ui_session.cpp
     src/ipc/pipe_server.cpp
     src/network/api.cpp
     src/network/api_errors.cpp
@@ -22,7 +31,10 @@ add_library(PhoneUnlockServiceCore STATIC
 )
 
 target_include_directories(PhoneUnlockServiceCore PUBLIC src)
-target_compile_definitions(PhoneUnlockServiceCore PUBLIC WIN32_LEAN_AND_MEAN)
+target_compile_definitions(PhoneUnlockServiceCore PUBLIC
+    WIN32_LEAN_AND_MEAN
+    $<$<BOOL:${PHONEUNLOCK_TEST_COMMANDS}>:PHONEUNLOCK_TEST_COMMANDS>
+)
 target_link_libraries(PhoneUnlockServiceCore PUBLIC
     PhoneUnlockShared
     unofficial::nayuki-qr-code-generator::nayuki-qr-code-generator

@@ -1,6 +1,6 @@
 #include "credential.h"
-#include "secure_string.h"
-#include "settings.h"
+#include "password_protection.h"
+#include "serialization.h"
 #include "tile_bitmap.h"
 
 namespace
@@ -294,9 +294,7 @@ HRESULT Credential::Serialize(PCWSTR protectedPassword,
         return hr;
     }
 
-    const SerializationFormat format = ConfiguredSerializationFormat();
-    LogLine(L"serialization format=%lu", static_cast<DWORD>(format));
-    hr = SerializeLogon(format, qualifiedUserName_, protectedPassword, scenario_,
+    hr = SerializeInteractiveLogon(qualifiedUserName_, protectedPassword, scenario_,
         &serialization->rgbSerialization, &serialization->cbSerialization);
     if (FAILED(hr))
     {

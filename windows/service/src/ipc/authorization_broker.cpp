@@ -6,52 +6,43 @@
 namespace
 {
 constexpr ULONGLONG AuthorizationLifetime = 30'000;
-constexpr auto ConnectionCheckInterval = std::chrono::seconds(1);
+constexpr auto KeepWaitingCheckInterval = std::chrono::seconds(1);
+}
+
+AuthorizationBroker::AuthorizationBroker(MonotonicClock clock) : clock_(std::move(clock))
+{
 }
 
 void AuthorizationBroker::Authorize(const std::wstring& sid)
 {
     {
         std::lock_guard lock(mutex_);
-        expirations_[sid] = GetTickCount64() + AuthorizationLifetime;
+        expirations_[sid] = clock_() + AuthorizationLifetime;
     }
     LogLine(L"authorization created");
     changed_.notify_all();
 }
 
 std::optional<std::wstring> AuthorizationBroker::WaitForAuthorization(const std::vector<std::wstring>& sids,
-    const std::function<bool()>& clientConnected)
+    const std::function<bool()>& keepWaiting)
 {
     std::unique_lock lock(mutex_);
     for (;;)
     {
         DropExpired();
-        if (stopping_)
-        {
-            return std::nullopt;
-        }
         if (auto sid = TakeMatching(sids))
         {
             return sid;
         }
         lock.unlock();
-        const bool connected = clientConnected();
+        const bool waiting = keepWaiting();
         lock.lock();
-        if (!connected)
+        if (!waiting)
         {
             return std::nullopt;
         }
-        changed_.wait_for(lock, ConnectionCheckInterval);
+        changed_.wait_for(lock, KeepWaitingCheckInterval);
     }
-}
-
-void AuthorizationBroker::Stop()
-{
-    {
-        std::lock_guard lock(mutex_);
-        stopping_ = true;
-    }
-    changed_.notify_all();
 }
 
 std::optional<std::wstring> AuthorizationBroker::TakeMatching(const std::vector<std::wstring>& sids)
@@ -69,6 +60,6 @@ std::optional<std::wstring> AuthorizationBroker::TakeMatching(const std::vector<
 
 void AuthorizationBroker::DropExpired()
 {
-    const ULONGLONG now = GetTickCount64();
+    const ULONGLONG now = clock_();
     std::erase_if(expirations_, [now](const auto& entry) { return entry.second <= now; });
 }

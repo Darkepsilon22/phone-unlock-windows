@@ -32,6 +32,7 @@ private:
     {
         std::wstring sid;
         SecureString password;
+        ULONGLONG receivedAt = 0;
     };
 
     Provider();

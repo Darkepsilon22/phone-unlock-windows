@@ -4,8 +4,6 @@ namespace
 {
 constexpr wchar_t DomainSeparator = L'\\';
 constexpr char NegotiatePackageName[] = "Negotiate";
-constexpr DWORD ProviderPackFlags = CRED_PACK_PROTECTED_CREDENTIALS | CRED_PACK_ID_PROVIDER_CREDENTIALS;
-constexpr DWORD ProtectedPackFlags = CRED_PACK_PROTECTED_CREDENTIALS;
 
 struct QualifiedName
 {
@@ -119,22 +117,14 @@ HRESULT PackInteractiveUnlockLogon(const KERB_INTERACTIVE_LOGON& logon, BYTE** b
     *size = packedSize;
     return S_OK;
 }
-
-HRESULT RequiredPackSize(DWORD flags, PCWSTR qualifiedUserName, PCWSTR protectedPassword, DWORD* size)
-{
-    *size = 0;
-    if (CredPackAuthenticationBufferW(flags, const_cast<PWSTR>(qualifiedUserName),
-            const_cast<PWSTR>(protectedPassword), nullptr, size))
-    {
-        return E_UNEXPECTED;
-    }
-    const DWORD error = GetLastError();
-    return error == ERROR_INSUFFICIENT_BUFFER && *size > 0 ? S_OK : HRESULT_FROM_WIN32(error);
 }
 
 HRESULT SerializeInteractiveLogon(PCWSTR qualifiedUserName, PCWSTR protectedPassword,
     CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, BYTE** buffer, DWORD* size)
 {
+    *buffer = nullptr;
+    *size = 0;
+
     QualifiedName name;
     HRESULT hr = SplitQualifiedUserName(qualifiedUserName, &name);
     KERB_INTERACTIVE_LOGON logon = {};
@@ -147,55 +137,6 @@ HRESULT SerializeInteractiveLogon(PCWSTR qualifiedUserName, PCWSTR protectedPass
         hr = PackInteractiveUnlockLogon(logon, buffer, size);
     }
     return hr;
-}
-
-HRESULT PackCredentials(DWORD flags, PCWSTR qualifiedUserName, PCWSTR protectedPassword,
-    BYTE** buffer, DWORD* size)
-{
-    DWORD packSize = 0;
-    HRESULT hr = RequiredPackSize(flags, qualifiedUserName, protectedPassword, &packSize);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    auto* packed = static_cast<BYTE*>(CoTaskMemAlloc(packSize));
-    if (!packed)
-    {
-        return E_OUTOFMEMORY;
-    }
-    if (!CredPackAuthenticationBufferW(flags, const_cast<PWSTR>(qualifiedUserName),
-            const_cast<PWSTR>(protectedPassword), packed, &packSize))
-    {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        SecureZeroMemory(packed, packSize);
-        CoTaskMemFree(packed);
-        return hr;
-    }
-
-    *buffer = packed;
-    *size = packSize;
-    return S_OK;
-}
-}
-
-HRESULT SerializeLogon(SerializationFormat format, PCWSTR qualifiedUserName, PCWSTR protectedPassword,
-    CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, BYTE** buffer, DWORD* size)
-{
-    *buffer = nullptr;
-    *size = 0;
-
-    switch (format)
-    {
-    case SerializationFormat::InteractiveLogon:
-        return SerializeInteractiveLogon(qualifiedUserName, protectedPassword, scenario, buffer, size);
-    case SerializationFormat::ProviderCredentials:
-        return PackCredentials(ProviderPackFlags, qualifiedUserName, protectedPassword, buffer, size);
-    case SerializationFormat::ProtectedCredentials:
-        return PackCredentials(ProtectedPackFlags, qualifiedUserName, protectedPassword, buffer, size);
-    default:
-        return E_INVALIDARG;
-    }
 }
 
 HRESULT GetNegotiatePackageId(ULONG* packageId)

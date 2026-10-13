@@ -5,6 +5,7 @@ namespace
 {
 constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlockProto";
 constexpr wchar_t LogFileName[] = L"cp.log";
+constexpr ULONGLONG PendingLogonLifetime = 30'000;
 
 bool IsSupported(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario)
 {
@@ -274,7 +275,7 @@ void Provider::OnServiceReady(const std::wstring& sid, SecureString password)
     UINT_PTR context = 0;
     {
         std::lock_guard lock(mutex_);
-        pending_ = PendingLogon{ sid, std::move(password) };
+        pending_ = PendingLogon{ sid, std::move(password), GetTickCount64() };
         events = events_;
         context = adviseContext_;
         if (events)
@@ -294,6 +295,12 @@ void Provider::ArmPendingLogon(DWORD* defaultIndex, BOOL* autoLogonWithDefault)
     std::lock_guard lock(mutex_);
     if (!pending_)
     {
+        return;
+    }
+    if (GetTickCount64() - pending_->receivedAt > PendingLogonLifetime)
+    {
+        LogLine(L"automatic logon expired");
+        pending_.reset();
         return;
     }
 
