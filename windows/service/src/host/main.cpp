@@ -1,5 +1,5 @@
-#include "admin_commands.h"
-#include "service_host.h"
+#include "admin/admin_commands.h"
+#include "host/service_host.h"
 #include <fcntl.h>
 #include <io.h>
 #include <cstdio>

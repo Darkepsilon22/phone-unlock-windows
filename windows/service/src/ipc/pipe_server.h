@@ -1,10 +1,10 @@
 #pragma once
 
-#include "authorization_broker.h"
-#include "pairing_manager.h"
+#include "ipc/authorization_broker.h"
+#include "pairing/pairing_manager.h"
 #include "pipe_protocol.h"
-#include "secret_store.h"
-#include "worker_group.h"
+#include "storage/secret_store.h"
+#include "support/worker_group.h"
 
 enum class PipeRole
 {

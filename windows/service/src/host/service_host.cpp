@@ -1,9 +1,9 @@
-#include "service_host.h"
-#include "api.h"
-#include "http_server.h"
+#include "host/service_host.h"
+#include "network/api.h"
+#include "network/http_server.h"
 #include "log.h"
 #include "pipe_protocol.h"
-#include "pipe_server.h"
+#include "ipc/pipe_server.h"
 #include <cstdio>
 #include <memory>
 #include <thread>

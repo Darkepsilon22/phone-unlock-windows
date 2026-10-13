@@ -1,24 +1,24 @@
 find_package(unofficial-nayuki-qr-code-generator CONFIG REQUIRED)
 
 add_library(PhoneUnlockServiceCore STATIC
-    src/admin_commands.cpp
-    src/api.cpp
-    src/api_errors.cpp
-    src/authorization_broker.cpp
-    src/cbor.cpp
-    src/crypto.cpp
-    src/file_io.cpp
-    src/http_server.cpp
-    src/pairing_manager.cpp
-    src/pairing_protocol.cpp
-    src/pairing_store.cpp
-    src/pc_identity.cpp
-    src/pipe_server.cpp
-    src/qr_console.cpp
-    src/secret_store.cpp
-    src/service_host.cpp
-    src/text.cpp
-    src/worker_group.cpp
+    src/admin/admin_commands.cpp
+    src/admin/qr_console.cpp
+    src/crypto/crypto.cpp
+    src/encoding/cbor.cpp
+    src/encoding/text.cpp
+    src/host/service_host.cpp
+    src/ipc/authorization_broker.cpp
+    src/ipc/pipe_server.cpp
+    src/network/api.cpp
+    src/network/api_errors.cpp
+    src/network/http_server.cpp
+    src/pairing/pairing_manager.cpp
+    src/pairing/pairing_protocol.cpp
+    src/pairing/pc_identity.cpp
+    src/storage/file_io.cpp
+    src/storage/pairing_store.cpp
+    src/storage/secret_store.cpp
+    src/support/worker_group.cpp
 )
 
 target_include_directories(PhoneUnlockServiceCore PUBLIC src)
@@ -29,7 +29,7 @@ target_link_libraries(PhoneUnlockServiceCore PUBLIC
     advapi32 bcrypt crypt32 httpapi iphlpapi ws2_32 secur32
 )
 
-add_executable(PhoneUnlockService src/main.cpp)
+add_executable(PhoneUnlockService src/host/main.cpp)
 target_link_libraries(PhoneUnlockService PRIVATE PhoneUnlockServiceCore)
 
 add_executable(PhoneUnlockServiceTests

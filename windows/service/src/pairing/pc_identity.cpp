@@ -1,7 +1,7 @@
-#include "pc_identity.h"
-#include "file_io.h"
+#include "pairing/pc_identity.h"
+#include "storage/file_io.h"
 #include "log.h"
-#include "text.h"
+#include "encoding/text.h"
 #include <wincrypt.h>
 
 namespace

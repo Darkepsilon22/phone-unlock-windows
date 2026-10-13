@@ -1,7 +1,7 @@
-#include "pipe_server.h"
+#include "ipc/pipe_server.h"
 #include "log.h"
 #include "pipe_io.h"
-#include "text.h"
+#include "encoding/text.h"
 #include <sddl.h>
 
 using pipe_protocol::Message;

@@ -1,4 +1,4 @@
-#include "cbor.h"
+#include "encoding/cbor.h"
 #include "test_runner.h"
 
 namespace

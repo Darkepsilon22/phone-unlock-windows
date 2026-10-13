@@ -1,4 +1,4 @@
-#include "text.h"
+#include "encoding/text.h"
 #include <windows.h>
 
 std::string Utf8FromWide(const std::wstring& text)

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "cbor.h"
-#include "crypto.h"
+#include "encoding/cbor.h"
+#include "crypto/crypto.h"
 #include <cstdint>
 #include <optional>
 #include <string>

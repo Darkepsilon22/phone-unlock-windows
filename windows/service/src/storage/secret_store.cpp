@@ -1,5 +1,5 @@
-#include "secret_store.h"
-#include "file_io.h"
+#include "storage/secret_store.h"
+#include "storage/file_io.h"
 #include <dpapi.h>
 #include <sddl.h>
 #include <algorithm>

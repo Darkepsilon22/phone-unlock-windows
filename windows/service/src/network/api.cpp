@@ -1,5 +1,5 @@
-#include "api.h"
-#include "api_errors.h"
+#include "network/api.h"
+#include "network/api_errors.h"
 #include "log.h"
 
 namespace

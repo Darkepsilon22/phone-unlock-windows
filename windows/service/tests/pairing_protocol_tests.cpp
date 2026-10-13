@@ -1,4 +1,4 @@
-#include "pairing_protocol.h"
+#include "pairing/pairing_protocol.h"
 #include "test_runner.h"
 #include <string_view>
 

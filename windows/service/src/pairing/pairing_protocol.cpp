@@ -1,5 +1,5 @@
-#include "pairing_protocol.h"
-#include "text.h"
+#include "pairing/pairing_protocol.h"
+#include "encoding/text.h"
 #include <algorithm>
 #include <charconv>
 

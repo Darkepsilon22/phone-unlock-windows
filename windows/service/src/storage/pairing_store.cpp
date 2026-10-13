@@ -1,7 +1,7 @@
-#include "pairing_store.h"
-#include "file_io.h"
+#include "storage/pairing_store.h"
+#include "storage/file_io.h"
 #include "log.h"
-#include "text.h"
+#include "encoding/text.h"
 #include <algorithm>
 
 namespace

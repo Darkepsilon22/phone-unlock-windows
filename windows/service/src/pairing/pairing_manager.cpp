@@ -1,7 +1,7 @@
-#include "pairing_manager.h"
-#include "api_errors.h"
+#include "pairing/pairing_manager.h"
+#include "network/api_errors.h"
 #include "log.h"
-#include "text.h"
+#include "encoding/text.h"
 #include <sddl.h>
 #include <algorithm>
 #include <ctime>

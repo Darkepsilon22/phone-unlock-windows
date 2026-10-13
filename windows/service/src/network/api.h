@@ -1,7 +1,7 @@
 #pragma once
 
-#include "http_server.h"
-#include "pairing_manager.h"
+#include "network/http_server.h"
+#include "pairing/pairing_manager.h"
 
 class Api
 {

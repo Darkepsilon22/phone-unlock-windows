@@ -1,9 +1,9 @@
 #pragma once
 
-#include "http_server.h"
-#include "pairing_protocol.h"
-#include "pairing_store.h"
-#include "pc_identity.h"
+#include "network/http_server.h"
+#include "pairing/pairing_protocol.h"
+#include "storage/pairing_store.h"
+#include "pairing/pc_identity.h"
 #include <mutex>
 #include <optional>
 #include <string>

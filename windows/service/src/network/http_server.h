@@ -1,8 +1,8 @@
 #pragma once
 
-#include "cbor.h"
-#include "crypto.h"
-#include "worker_group.h"
+#include "encoding/cbor.h"
+#include "crypto/crypto.h"
+#include "support/worker_group.h"
 #include <winsock2.h>
 #include <windows.h>
 #include <http.h>
