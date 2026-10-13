@@ -32,6 +32,23 @@ Démontrer qu'un Credential Provider tiers peut ouvrir une session Windows 11 po
 
 Source : `C:\ProgramData\PhoneUnlockProto\cp.log` dans la VM (aucun secret ni nom de compte journalisé).
 
+## Complément du 13/10/2026 : sans réseau
+
+Câble réseau de la VM débranché (`VBoxManage controlvm win11-test setlinkstate1 off`).
+
+| Heure | Cas | Sérialisation | Statut | Sous-statut | Résultat |
+|---|---|---|---|---|---|
+| 15:14:42 | Après redémarrage | `CredPackAuthenticationBuffer` + fournisseur d'identité | `0xC000006D` | `0xC000023C` | Refus : réseau injoignable |
+| — | Après redémarrage | Tuile mot de passe de Windows, cache non amorcé | — | — | Refus : « connectez-vous avec le dernier mot de passe utilisé » |
+| — | Après redémarrage | Tuile mot de passe de Windows, cache amorcé en ligne | — | — | Session ouverte |
+| 15:27:52 | Après redémarrage | `KERB_INTERACTIVE_UNLOCK_LOGON`, domaine `MicrosoftAccount` | `0x00000000` | `0x00000000` | **Session ouverte en 0,13 s** |
+| 15:32:35 | Déverrouillage | `KERB_INTERACTIVE_UNLOCK_LOGON` | `0x00000000` | `0x00000000` | **Session déverrouillée** |
+| 15:34:39 | Après redémarrage, **réseau rétabli**, format par défaut | `KERB_INTERACTIVE_UNLOCK_LOGON` | `0x00000000` | `0x00000000` | **Session ouverte** |
+
+- Le format `CredPackAuthenticationBuffer` avec `CRED_PACK_ID_PROVIDER_CREDENTIALS` impose une vérification en ligne.
+- `KERB_INTERACTIVE_UNLOCK_LOGON` permet l'ouverture hors ligne grâce aux identifiants en cache. Il devient le format par défaut.
+- **Condition** : Windows doit avoir mis le mot de passe en cache lors d'une connexion **en ligne par mot de passe** sur ce PC. Une connexion par PIN seule ne suffit pas. L'assistant devra le vérifier ou le demander.
+
 ## Constats
 
 1. **Compte Microsoft** : Windows accepte un mot de passe soumis par un fournisseur tiers pour un compte Microsoft. La piste « Credential Provider et secret local protégé » est techniquement viable.

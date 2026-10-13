@@ -2,10 +2,14 @@
 
 #include "common.h"
 
-HRESULT SerializeLocalAccountLogon(PCWSTR qualifiedUserName, PCWSTR protectedPassword,
-    CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, BYTE** buffer, DWORD* size);
+enum class SerializationFormat : DWORD
+{
+    ProviderCredentials = 0,
+    InteractiveLogon = 1,
+    ProtectedCredentials = 2,
+};
 
-HRESULT SerializeProviderAccountLogon(PCWSTR qualifiedUserName, PCWSTR protectedPassword,
-    BYTE** buffer, DWORD* size);
+HRESULT SerializeLogon(SerializationFormat format, PCWSTR qualifiedUserName, PCWSTR protectedPassword,
+    CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, BYTE** buffer, DWORD* size);
 
 HRESULT GetNegotiatePackageId(ULONG* packageId);

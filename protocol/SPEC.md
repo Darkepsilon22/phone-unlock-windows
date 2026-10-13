@@ -109,7 +109,12 @@ pair-tbs = "PhoneUnlock-v1-pair-confirm" ‖ 0x00 ‖ transcript
 
 ### 4.1 Création
 
-La tuile Windows crée une demande via le service. Le service génère `request_id` (16 octets) et `nonce` (32 octets) par CSPRNG, enregistre l'instant de création sur son **horloge monotone** et fixe l'expiration à **30 secondes**. Une seule demande active par compte ; une nouvelle demande annule la précédente.
+Deux déclencheurs créent une demande (décision D1, [docs/decisions.md](../docs/decisions.md)) :
+
+- **Tuile** : bouton « Demander » sur la tuile Windows, `action = 1` ou `2` selon le scénario.
+- **Téléphone** : `POST /v1/unlock`, corps vide. Le service crée la demande **uniquement** si l'état courant est `locked` ou `logon_screen` et si la tuile du compte associé est affichée ; sinon `WRONG_CONTEXT`. La réponse est directement l'`authorization-request` du §4.2.
+
+Dans les deux cas, le service génère `request_id` (16 octets) et `nonce` (32 octets) par CSPRNG, enregistre l'instant de création sur son **horloge monotone** et fixe l'expiration à **30 secondes**. Une seule demande active par compte ; une nouvelle demande annule la précédente.
 
 ### 4.2 Récupération par le téléphone
 
@@ -199,6 +204,35 @@ state = "created" / "presented" / "authorized" / "consumed" /
 
 Le téléphone n'affiche « Session ouverte » que sur `logon_succeeded`. Sans réponse finale avant la fermeture du canal, il affiche `RESULT_UNKNOWN`.
 
+### 4.7 Soumission par la tuile
+
+Après la consommation (§4.5, étape 6), le service prévient la tuile par IPC. La tuile :
+
+1. appelle `ICredentialProviderEvents::CredentialsChanged` ;
+2. désigne son crédential comme crédential par défaut avec connexion automatique dans `GetCredentialCount` ;
+3. soumet les identifiants **une seule fois** dans `GetSerialization`, puis retire la connexion automatique ;
+4. transmet `ReportResult` au service, qui publie `logon_succeeded` ou `logon_rejected`.
+
+Ce chemin sert aux deux déclencheurs ; en mode tuile, l'utilisatrice n'a pas à recliquer.
+
+## 4bis. État du PC en temps réel
+
+`GET /v1/state?since={version}` : attente longue jusqu'à 25 s, réponse immédiate si la version a changé (décision D2).
+
+```cddl
+pc-state = {
+  1: uint,                   ; version, incrémentée à chaque changement
+  2: session-state,
+  3: bool,                   ; unlock_available : POST /v1/unlock accepté maintenant
+  4: tstr .size (1..64),     ; nom du PC affiché
+}
+session-state = "locked" / "logon_screen" / "signed_in" / "unknown"
+```
+
+- `locked` : session du compte associé verrouillée ; `logon_screen` : aucune session ouverte ; `signed_in` : session ouverte et déverrouillée.
+- L'état ne révèle rien d'autre que ces quatre valeurs pour le compte associé.
+- L'application affiche « PC injoignable » si la connexion échoue ou si aucune réponse n'arrive en 30 s.
+
 ## 5. États
 
 ```
@@ -236,9 +270,19 @@ Toute réponse d'erreur porte un corps `{ 1: error-code }`.
 
 ## 8. Réseau
 
-- Le pare-feu autorise le port uniquement pour le service, et uniquement depuis l'adresse du téléphone associé ; le profil Public est conservé.
+- Le pare-feu autorise le port uniquement pour le service et uniquement depuis le sous-réseau local ; le profil Public est conservé. Le TLS mutuel épinglé reste la seule preuve d'identité.
 - Aucune découverte réseau générale, aucun UPnP, aucun relais Internet.
 - Si l'adresse du PC change, l'utilisatrice la ressaisit ou rescanne un QR de reconnexion, qui ne contient pas de jeton d'association.
+
+### 8.1 Sans connexion (décision D3)
+
+| Mode | Fonctionnement |
+|---|---|
+| Wi-Fi commun sans Internet | Inchangé |
+| Point d'accès du téléphone | Le PC enregistre le point d'accès comme réseau connu pour tous les utilisateurs, donc disponible à l'écran de connexion. Le téléphone cherche le service sur son propre sous-réseau de point d'accès (port 47863) et n'accepte que l'identité PC épinglée. |
+| Bluetooth Low Energy | Lot ultérieur : mêmes messages CBOR, canal à spécifier |
+
+L'ouverture d'un compte Microsoft sans Internet repose sur les identifiants en cache de Windows : à vérifier en VM avant d'annoncer ce mode.
 - Pendant les tests en VM (NAT VirtualBox), une redirection `hôte:47863 → VM:47863` est ajoutée ; elle est retirée après les tests.
 
 ## 9. Sécurité : correspondance avec le cahier
@@ -252,7 +296,7 @@ Toute réponse d'erreur porte un corps `{ 1: error-code }`.
 | S05 mauvais compte | `account_sid` et `context_id` signés et revérifiés (§4.5) |
 | S08 saturation | quotas, taille maximale, une demande active (§7) |
 | S10 nouvelle biométrie | clé invalidée à l'enrôlement, nouvelle association obligatoire |
-| S12 mauvaise demande | initiation sur le PC, noms affichés et code de correspondance signés (§4.2, §4.3) |
+| S12 mauvaise demande | mode tuile : initiation sur le PC et code de correspondance ; mode téléphone : PC réellement verrouillé, demande liée à ce verrouillage, noms signés, historique (§4.1, décision D1) |
 
 ## 10. Compatibilité
 

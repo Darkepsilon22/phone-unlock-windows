@@ -12,6 +12,10 @@ if ($model -notmatch 'VirtualBox' -and -not $Force) {
     throw "Refusé : installation réservée à la VM de test (modèle détecté : $model)."
 }
 
+if (Test-Path $target) {
+    Get-ChildItem "$target.*.old" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+    Rename-Item $target "$name.dll.$(Get-Date -Format yyyyMMddHHmmss).old"
+}
 Copy-Item $source $target -Force
 
 $classKey = "HKLM:\SOFTWARE\Classes\CLSID\$clsid"

@@ -5,6 +5,7 @@ namespace
 constexpr wchar_t DomainSeparator = L'\\';
 constexpr char NegotiatePackageName[] = "Negotiate";
 constexpr DWORD ProviderPackFlags = CRED_PACK_PROTECTED_CREDENTIALS | CRED_PACK_ID_PROVIDER_CREDENTIALS;
+constexpr DWORD ProtectedPackFlags = CRED_PACK_PROTECTED_CREDENTIALS;
 
 struct QualifiedName
 {
@@ -119,10 +120,10 @@ HRESULT PackInteractiveUnlockLogon(const KERB_INTERACTIVE_LOGON& logon, BYTE** b
     return S_OK;
 }
 
-HRESULT RequiredPackSize(PCWSTR qualifiedUserName, PCWSTR protectedPassword, DWORD* size)
+HRESULT RequiredPackSize(DWORD flags, PCWSTR qualifiedUserName, PCWSTR protectedPassword, DWORD* size)
 {
     *size = 0;
-    if (CredPackAuthenticationBufferW(ProviderPackFlags, const_cast<PWSTR>(qualifiedUserName),
+    if (CredPackAuthenticationBufferW(flags, const_cast<PWSTR>(qualifiedUserName),
             const_cast<PWSTR>(protectedPassword), nullptr, size))
     {
         return E_UNEXPECTED;
@@ -130,14 +131,10 @@ HRESULT RequiredPackSize(PCWSTR qualifiedUserName, PCWSTR protectedPassword, DWO
     const DWORD error = GetLastError();
     return error == ERROR_INSUFFICIENT_BUFFER && *size > 0 ? S_OK : HRESULT_FROM_WIN32(error);
 }
-}
 
-HRESULT SerializeLocalAccountLogon(PCWSTR qualifiedUserName, PCWSTR protectedPassword,
+HRESULT SerializeInteractiveLogon(PCWSTR qualifiedUserName, PCWSTR protectedPassword,
     CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, BYTE** buffer, DWORD* size)
 {
-    *buffer = nullptr;
-    *size = 0;
-
     QualifiedName name;
     HRESULT hr = SplitQualifiedUserName(qualifiedUserName, &name);
     KERB_INTERACTIVE_LOGON logon = {};
@@ -152,14 +149,11 @@ HRESULT SerializeLocalAccountLogon(PCWSTR qualifiedUserName, PCWSTR protectedPas
     return hr;
 }
 
-HRESULT SerializeProviderAccountLogon(PCWSTR qualifiedUserName, PCWSTR protectedPassword,
+HRESULT PackCredentials(DWORD flags, PCWSTR qualifiedUserName, PCWSTR protectedPassword,
     BYTE** buffer, DWORD* size)
 {
-    *buffer = nullptr;
-    *size = 0;
-
     DWORD packSize = 0;
-    HRESULT hr = RequiredPackSize(qualifiedUserName, protectedPassword, &packSize);
+    HRESULT hr = RequiredPackSize(flags, qualifiedUserName, protectedPassword, &packSize);
     if (FAILED(hr))
     {
         return hr;
@@ -170,7 +164,7 @@ HRESULT SerializeProviderAccountLogon(PCWSTR qualifiedUserName, PCWSTR protected
     {
         return E_OUTOFMEMORY;
     }
-    if (!CredPackAuthenticationBufferW(ProviderPackFlags, const_cast<PWSTR>(qualifiedUserName),
+    if (!CredPackAuthenticationBufferW(flags, const_cast<PWSTR>(qualifiedUserName),
             const_cast<PWSTR>(protectedPassword), packed, &packSize))
     {
         hr = HRESULT_FROM_WIN32(GetLastError());
@@ -182,6 +176,26 @@ HRESULT SerializeProviderAccountLogon(PCWSTR qualifiedUserName, PCWSTR protected
     *buffer = packed;
     *size = packSize;
     return S_OK;
+}
+}
+
+HRESULT SerializeLogon(SerializationFormat format, PCWSTR qualifiedUserName, PCWSTR protectedPassword,
+    CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, BYTE** buffer, DWORD* size)
+{
+    *buffer = nullptr;
+    *size = 0;
+
+    switch (format)
+    {
+    case SerializationFormat::InteractiveLogon:
+        return SerializeInteractiveLogon(qualifiedUserName, protectedPassword, scenario, buffer, size);
+    case SerializationFormat::ProviderCredentials:
+        return PackCredentials(ProviderPackFlags, qualifiedUserName, protectedPassword, buffer, size);
+    case SerializationFormat::ProtectedCredentials:
+        return PackCredentials(ProtectedPackFlags, qualifiedUserName, protectedPassword, buffer, size);
+    default:
+        return E_INVALIDARG;
+    }
 }
 
 HRESULT GetNegotiatePackageId(ULONG* packageId)

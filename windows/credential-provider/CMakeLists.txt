@@ -14,6 +14,7 @@ add_library(PhoneUnlockProtoCP SHARED
     src/provider.cpp
     src/secure_string.cpp
     src/serialization.cpp
+    src/settings.cpp
     src/tile_bitmap.cpp
     src/PhoneUnlockProtoCP.def
 )

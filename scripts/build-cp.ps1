@@ -17,5 +17,5 @@ if ($LASTEXITCODE -ne 0) { throw 'Compilation en échec.' }
 
 New-Item -ItemType Directory -Force $deploy | Out-Null
 Copy-Item (Join-Path $build 'Release\PhoneUnlockProtoCP.dll') $deploy -Force
-Copy-Item (Join-Path $PSScriptRoot 'vm-install-cp.ps1'), (Join-Path $PSScriptRoot 'vm-uninstall-cp.ps1') $deploy -Force
+Copy-Item (Join-Path $PSScriptRoot 'vm-*.ps1') $deploy -Force
 Get-ChildItem $deploy
