@@ -1,6 +1,10 @@
 #pragma once
 
 #include "credential.h"
+#include "service_listener.h"
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <vector>
 
 class Provider final : public ICredentialProvider, public ICredentialProviderSetUserArray
@@ -24,6 +28,12 @@ public:
     IFACEMETHODIMP SetUserArray(ICredentialProviderUserArray* users) override;
 
 private:
+    struct PendingLogon
+    {
+        std::wstring sid;
+        SecureString password;
+    };
+
     Provider();
     ~Provider();
 
@@ -31,9 +41,20 @@ private:
     HRESULT AddCredentialFor(DWORD userIndex);
     void ReleaseCredentials();
 
+    void StartListener();
+    void StopListener();
+    void OnServiceReady(const std::wstring& sid, SecureString password);
+    void ArmPendingLogon(DWORD* defaultIndex, BOOL* autoLogonWithDefault);
+
     LONG refCount_;
     CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario_;
     ICredentialProviderUserArray* users_;
     std::vector<Credential*> credentials_;
     bool credentialsOutdated_;
+
+    std::mutex mutex_;
+    ICredentialProviderEvents* events_;
+    UINT_PTR adviseContext_;
+    std::optional<PendingLogon> pending_;
+    std::shared_ptr<ServiceListener> listener_;
 };

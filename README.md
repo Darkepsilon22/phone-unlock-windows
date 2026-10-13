@@ -10,6 +10,7 @@ un Credential Provider Windows soumet ensuite les identifiants au système.
 |---|---|---|
 | `protocol/` | Spécification du protocole (CBOR, ECDSA P-256, TLS mutuel) | L2 |
 | `android/` | Application Kotlin / Compose / AndroidX Biometric | L3 |
+| `windows/shared/` | Code commun C++ : canal local (pipe), journal, mémoire effacée | L4 |
 | `windows/credential-provider/` | DLL COM C++ chargée par LogonUI | L1, L4 |
 | `windows/service/` | Service Windows C++ (réseau, preuve, secrets) | L4 |
 | `windows/config-tool/` | Assistant C# .NET (diagnostic, révocation, historique) | L4 |

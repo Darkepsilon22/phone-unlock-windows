@@ -151,7 +151,7 @@ IFACEMETHODIMP Credential::UnAdvise()
 
 IFACEMETHODIMP Credential::SetSelected(BOOL* autoLogon)
 {
-    *autoLogon = FALSE;
+    *autoLogon = autoLogonPassword_.empty() ? FALSE : TRUE;
     return S_OK;
 }
 
@@ -253,7 +253,8 @@ IFACEMETHODIMP Credential::GetSerialization(CREDENTIAL_PROVIDER_GET_SERIALIZATIO
     *statusIcon = CPSI_NONE;
     ZeroMemory(serialization, sizeof(*serialization));
 
-    PCWSTR password = fieldValues_[PasswordField];
+    const bool automatic = !autoLogonPassword_.empty();
+    PCWSTR password = automatic ? autoLogonPassword_.c_str() : fieldValues_[PasswordField];
     if (!password || *password == L'\0')
     {
         ShowStatus(EmptyPasswordStatus);
@@ -267,8 +268,10 @@ IFACEMETHODIMP Credential::GetSerialization(CREDENTIAL_PROVIDER_GET_SERIALIZATIO
         hr = Serialize(protectedPassword, serialization);
     }
     SecureFree(&protectedPassword);
+    autoLogonPassword_ = SecureString();
     ClearPassword();
-    LogLine(L"serialization hr=0x%08X scenario=%d local=%d", AsHex(hr), scenario_, isLocalAccount_);
+    LogLine(L"serialization hr=0x%08X scenario=%d local=%d automatic=%d", AsHex(hr), scenario_, isLocalAccount_,
+        automatic);
 
     if (FAILED(hr))
     {
@@ -312,6 +315,11 @@ IFACEMETHODIMP Credential::ReportResult(NTSTATUS status, NTSTATUS subStatus, PWS
     LogLine(L"result status=0x%08X substatus=0x%08X scenario=%d local=%d",
         AsHex(status), AsHex(subStatus), scenario_, isLocalAccount_);
     ClearPassword();
+    if (reportResult_)
+    {
+        reportResult_(status, subStatus);
+        reportResult_ = nullptr;
+    }
 
     if (status >= 0)
     {
@@ -330,6 +338,18 @@ IFACEMETHODIMP Credential::GetUserSid(PWSTR* sid)
 {
     *sid = nullptr;
     return userSid_ ? SHStrDupW(userSid_, sid) : E_UNEXPECTED;
+}
+
+std::wstring Credential::Sid() const
+{
+    return userSid_ ? std::wstring(userSid_) : std::wstring();
+}
+
+void Credential::ArmAutoLogon(SecureString password, ResultReporter reporter)
+{
+    autoLogonPassword_ = std::move(password);
+    reportResult_ = std::move(reporter);
+    LogLine(L"automatic logon armed");
 }
 
 void Credential::ShowStatus(PCWSTR text)

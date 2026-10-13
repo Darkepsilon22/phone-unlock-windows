@@ -1,12 +1,20 @@
 #pragma once
 
 #include "fields.h"
+#include "secure_vector.h"
+#include <functional>
+#include <string>
 
 class Credential final : public ICredentialProviderCredential2
 {
 public:
+    using ResultReporter = std::function<void(NTSTATUS status, NTSTATUS subStatus)>;
+
     static HRESULT Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
         Credential** credential);
+
+    std::wstring Sid() const;
+    void ArmAutoLogon(SecureString password, ResultReporter reporter);
 
     IFACEMETHODIMP QueryInterface(REFIID riid, void** object) override;
     IFACEMETHODIMP_(ULONG) AddRef() override;
@@ -52,4 +60,6 @@ private:
     PWSTR userSid_;
     PWSTR qualifiedUserName_;
     bool isLocalAccount_;
+    SecureString autoLogonPassword_;
+    ResultReporter reportResult_;
 };

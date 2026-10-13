@@ -1,4 +1,4 @@
-#Requires -RunAsAdministrator
+﻿#Requires -RunAsAdministrator
 $ErrorActionPreference = 'Stop'
 
 $clsid = '{512D55BA-432F-42D6-95EF-8071913597AA}'

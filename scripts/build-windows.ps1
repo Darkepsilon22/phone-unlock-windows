@@ -1,8 +1,8 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$source = Join-Path $root 'windows\credential-provider'
-$build = Join-Path $root 'build\credential-provider'
+$source = Join-Path $root 'windows'
+$build = Join-Path $root 'build\windows'
 $deploy = Join-Path $root 'build\deploy'
 
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
@@ -16,6 +16,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Configuration CMake en échec.' }
 if ($LASTEXITCODE -ne 0) { throw 'Compilation en échec.' }
 
 New-Item -ItemType Directory -Force $deploy | Out-Null
-Copy-Item (Join-Path $build 'Release\PhoneUnlockProtoCP.dll') $deploy -Force
+Copy-Item (Join-Path $build 'credential-provider\Release\PhoneUnlockProtoCP.dll') $deploy -Force
+Copy-Item (Join-Path $build 'service\Release\PhoneUnlockService.exe') $deploy -Force
 Copy-Item (Join-Path $PSScriptRoot 'vm-*.ps1') $deploy -Force
 Get-ChildItem $deploy

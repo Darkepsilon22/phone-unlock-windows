@@ -1,7 +1,11 @@
 #include "provider.h"
+#include <algorithm>
 
 namespace
 {
+constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlockProto";
+constexpr wchar_t LogFileName[] = L"cp.log";
+
 bool IsSupported(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario)
 {
     return scenario == CPUS_LOGON || scenario == CPUS_UNLOCK_WORKSTATION;
@@ -12,13 +16,20 @@ Provider::Provider()
     : refCount_(1),
       scenario_(CPUS_INVALID),
       users_(nullptr),
-      credentialsOutdated_(true)
+      credentialsOutdated_(true),
+      events_(nullptr),
+      adviseContext_(0)
 {
     DllAddRef();
 }
 
 Provider::~Provider()
 {
+    StopListener();
+    if (events_)
+    {
+        events_->Release();
+    }
     ReleaseCredentials();
     if (users_)
     {
@@ -30,6 +41,7 @@ Provider::~Provider()
 HRESULT Provider::CreateInstance(REFIID riid, void** object)
 {
     *object = nullptr;
+    ConfigureLog(LogDirectory, LogFileName);
     auto* provider = new (std::nothrow) Provider();
     if (!provider)
     {
@@ -84,14 +96,34 @@ IFACEMETHODIMP Provider::SetSerialization(const CREDENTIAL_PROVIDER_CREDENTIAL_S
     return E_NOTIMPL;
 }
 
-IFACEMETHODIMP Provider::Advise(ICredentialProviderEvents*, UINT_PTR)
+IFACEMETHODIMP Provider::Advise(ICredentialProviderEvents* events, UINT_PTR context)
 {
-    return E_NOTIMPL;
+    std::lock_guard lock(mutex_);
+    if (events_)
+    {
+        events_->Release();
+    }
+    events_ = events;
+    adviseContext_ = context;
+    if (events_)
+    {
+        events_->AddRef();
+    }
+    return S_OK;
 }
 
 IFACEMETHODIMP Provider::UnAdvise()
 {
-    return E_NOTIMPL;
+    StopListener();
+    std::lock_guard lock(mutex_);
+    if (events_)
+    {
+        events_->Release();
+        events_ = nullptr;
+    }
+    adviseContext_ = 0;
+    pending_.reset();
+    return S_OK;
 }
 
 IFACEMETHODIMP Provider::GetFieldDescriptorCount(DWORD* count)
@@ -112,7 +144,9 @@ IFACEMETHODIMP Provider::GetCredentialCount(DWORD* count, DWORD* defaultIndex, B
     if (credentialsOutdated_)
     {
         RebuildCredentials();
+        StartListener();
     }
+    ArmPendingLogon(defaultIndex, autoLogonWithDefault);
     *count = static_cast<DWORD>(credentials_.size());
     return S_OK;
 }
@@ -200,4 +234,83 @@ void Provider::ReleaseCredentials()
         credential->Release();
     }
     credentials_.clear();
+}
+
+void Provider::StartListener()
+{
+    std::vector<std::wstring> sids;
+    for (const Credential* credential : credentials_)
+    {
+        sids.push_back(credential->Sid());
+    }
+
+    {
+        std::lock_guard lock(mutex_);
+        if (!events_ || sids.empty() || (listener_ && listener_->Sids() == sids))
+        {
+            return;
+        }
+    }
+
+    StopListener();
+    auto listener = std::make_shared<ServiceListener>(std::move(sids),
+        [this](const std::wstring& sid, SecureString password) { OnServiceReady(sid, std::move(password)); });
+    std::lock_guard lock(mutex_);
+    listener_ = std::move(listener);
+}
+
+void Provider::StopListener()
+{
+    std::shared_ptr<ServiceListener> listener;
+    {
+        std::lock_guard lock(mutex_);
+        listener.swap(listener_);
+    }
+}
+
+void Provider::OnServiceReady(const std::wstring& sid, SecureString password)
+{
+    ICredentialProviderEvents* events = nullptr;
+    UINT_PTR context = 0;
+    {
+        std::lock_guard lock(mutex_);
+        pending_ = PendingLogon{ sid, std::move(password) };
+        events = events_;
+        context = adviseContext_;
+        if (events)
+        {
+            events->AddRef();
+        }
+    }
+    if (events)
+    {
+        events->CredentialsChanged(context);
+        events->Release();
+    }
+}
+
+void Provider::ArmPendingLogon(DWORD* defaultIndex, BOOL* autoLogonWithDefault)
+{
+    std::lock_guard lock(mutex_);
+    if (!pending_)
+    {
+        return;
+    }
+
+    const auto match = std::find_if(credentials_.begin(), credentials_.end(),
+        [this](const Credential* credential) { return credential->Sid() == pending_->sid; });
+    if (match != credentials_.end())
+    {
+        std::weak_ptr<ServiceListener> listener = listener_;
+        const std::wstring sid = pending_->sid;
+        (*match)->ArmAutoLogon(std::move(pending_->password), [listener, sid](NTSTATUS status, NTSTATUS subStatus) {
+            if (const auto alive = listener.lock())
+            {
+                alive->ReportResult(sid, status, subStatus);
+            }
+        });
+        *defaultIndex = static_cast<DWORD>(match - credentials_.begin());
+        *autoLogonWithDefault = TRUE;
+    }
+    pending_.reset();
 }

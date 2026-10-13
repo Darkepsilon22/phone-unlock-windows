@@ -1,4 +1,4 @@
-#Requires -RunAsAdministrator
+﻿#Requires -RunAsAdministrator
 param(
     [Parameter(Mandatory)]
     [ValidateSet(0, 1, 2)]
