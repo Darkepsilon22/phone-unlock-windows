@@ -9,6 +9,8 @@ add_compile_definitions(UNICODE _UNICODE NOMINMAX)
 add_compile_options(/W4 /WX /utf-8 /permissive- /sdl /guard:cf /EHsc)
 add_link_options(/guard:cf /DYNAMICBASE /NXCOMPAT)
 
+enable_testing()
+
 add_subdirectory(shared)
 add_subdirectory(credential-provider)
 add_subdirectory(service)

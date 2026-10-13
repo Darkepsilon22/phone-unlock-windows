@@ -1,4 +1,5 @@
 #include "secret_store.h"
+#include "file_io.h"
 #include <dpapi.h>
 #include <sddl.h>
 #include <algorithm>
@@ -7,7 +8,6 @@ namespace
 {
 constexpr wchar_t SecretDescription[] = L"PhoneUnlock";
 constexpr wchar_t SecretExtension[] = L".bin";
-constexpr wchar_t TemporaryExtension[] = L".tmp";
 constexpr DWORD MaxSecretFileSize = 16 * 1024;
 
 class LocalBlob
@@ -33,51 +33,6 @@ DATA_BLOB EntropyFor(const std::wstring& sid)
 {
     return { static_cast<DWORD>(sid.size() * sizeof(wchar_t)),
         reinterpret_cast<BYTE*>(const_cast<wchar_t*>(sid.data())) };
-}
-
-HRESULT WriteWholeFile(const std::wstring& path, const DATA_BLOB& content)
-{
-    HANDLE file = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (file == INVALID_HANDLE_VALUE)
-    {
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-    DWORD written = 0;
-    const bool ok = WriteFile(file, content.pbData, content.cbData, &written, nullptr) &&
-        written == content.cbData && FlushFileBuffers(file);
-    const HRESULT hr = ok ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-    CloseHandle(file);
-    return hr;
-}
-
-HRESULT ReadWholeFile(const std::wstring& path, SecureBytes* content)
-{
-    HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (file == INVALID_HANDLE_VALUE)
-    {
-        return HRESULT_FROM_WIN32(GetLastError());
-    }
-
-    LARGE_INTEGER size = {};
-    HRESULT hr = GetFileSizeEx(file, &size) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-    if (SUCCEEDED(hr) && (size.QuadPart <= 0 || size.QuadPart > MaxSecretFileSize))
-    {
-        hr = HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
-    }
-    if (SUCCEEDED(hr))
-    {
-        const auto length = static_cast<DWORD>(size.QuadPart);
-        *content = SecureBytes(length);
-        content->ResizeWithinCapacity(length);
-        DWORD read = 0;
-        if (!ReadFile(file, content->data(), length, &read, nullptr) || read != length)
-        {
-            hr = HRESULT_FROM_WIN32(ERROR_READ_FAULT);
-        }
-    }
-    CloseHandle(file);
-    return hr;
 }
 }
 
@@ -118,19 +73,7 @@ HRESULT SecretStore::Save(const std::wstring& sid, const SecureString& password)
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
-
-    const std::wstring path = PathFor(sid);
-    const std::wstring temporary = path + TemporaryExtension;
-    HRESULT hr = WriteWholeFile(temporary, encrypted.blob);
-    if (SUCCEEDED(hr) && !MoveFileExW(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
-    {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-    }
-    if (FAILED(hr))
-    {
-        DeleteFileW(temporary.c_str());
-    }
-    return hr;
+    return WriteFileAtomically(PathFor(sid), { encrypted.blob.pbData, encrypted.blob.cbData });
 }
 
 HRESULT SecretStore::Load(const std::wstring& sid, SecureString* password) const
@@ -140,8 +83,8 @@ HRESULT SecretStore::Load(const std::wstring& sid, SecureString* password) const
         return E_INVALIDARG;
     }
 
-    SecureBytes stored;
-    HRESULT hr = ReadWholeFile(PathFor(sid), &stored);
+    std::vector<uint8_t> stored;
+    HRESULT hr = ReadSmallFile(PathFor(sid), MaxSecretFileSize, &stored);
     if (FAILED(hr))
     {
         return hr;

@@ -1,6 +1,7 @@
 #include "pipe_server.h"
 #include "log.h"
 #include "pipe_io.h"
+#include "text.h"
 #include <sddl.h>
 
 using pipe_protocol::Message;
@@ -48,11 +49,11 @@ bool IsConnected(HANDLE pipe)
     return PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) != FALSE;
 }
 
-void SendAck(HANDLE pipe, HRESULT hr, HANDLE stopEvent)
+PayloadWriter ResultOnly(HRESULT hr)
 {
     PayloadWriter writer;
     writer.WriteInt32(hr);
-    pipe_protocol::WriteMessage(pipe, MessageType::Ack, writer.Bytes(), stopEvent);
+    return writer;
 }
 
 void LogResult(const Message& message)
@@ -69,8 +70,9 @@ void LogResult(const Message& message)
 }
 }
 
-PipeServer::PipeServer(PipeRole role, const SecretStore& secrets, AuthorizationBroker& broker)
-    : role_(role), secrets_(secrets), broker_(broker)
+PipeServer::PipeServer(PipeRole role, const SecretStore& secrets, AuthorizationBroker& broker,
+    PairingManager* pairing)
+    : role_(role), secrets_(secrets), broker_(broker), pairing_(pairing)
 {
 }
 
@@ -95,10 +97,9 @@ void PipeServer::Run(HANDLE stopEvent)
         {
             CloseHandle(pipe);
         }
-        JoinFinishedWorkers();
     }
     broker_.Stop();
-    JoinAllWorkers();
+    workers_.JoinAll();
 }
 
 HANDLE PipeServer::CreateInstance(bool first) const
@@ -147,34 +148,11 @@ bool PipeServer::WaitForClient(HANDLE pipe, HANDLE stopEvent) const
 
 void PipeServer::StartWorker(HANDLE pipe, HANDLE stopEvent)
 {
-    auto finished = std::make_shared<std::atomic<bool>>(false);
-    workers_.push_back({ std::thread([this, pipe, stopEvent, finished] {
+    workers_.Start([this, pipe, stopEvent] {
         Serve(pipe, stopEvent);
         DisconnectNamedPipe(pipe);
         CloseHandle(pipe);
-        finished->store(true);
-    }), finished });
-}
-
-void PipeServer::JoinFinishedWorkers()
-{
-    workers_.remove_if([](Worker& worker) {
-        if (!worker.finished->load())
-        {
-            return false;
-        }
-        worker.thread.join();
-        return true;
     });
-}
-
-void PipeServer::JoinAllWorkers()
-{
-    for (Worker& worker : workers_)
-    {
-        worker.thread.join();
-    }
-    workers_.clear();
 }
 
 void PipeServer::Serve(HANDLE pipe, HANDLE stopEvent)
@@ -260,27 +238,117 @@ bool PipeServer::SendReady(HANDLE pipe, const std::wstring& sid, const SecureStr
 
 void PipeServer::ServeAdministrator(HANDLE pipe, const Message& message, HANDLE stopEvent)
 {
+    PayloadWriter reply;
+    switch (message.type)
+    {
+    case MessageType::Provision:
+        reply = HandleProvision(message);
+        break;
+    case MessageType::Authorize:
+        reply = HandleAuthorize(message);
+        break;
+    case MessageType::StartPairing:
+        reply = HandleStartPairing(message);
+        break;
+    case MessageType::PairingStatus:
+        reply = HandlePairingStatus();
+        break;
+    case MessageType::ConfirmPairing:
+        reply = HandleConfirmPairing(message);
+        break;
+    default:
+        reply.WriteInt32(E_INVALIDARG);
+        break;
+    }
+    pipe_protocol::WriteMessage(pipe, MessageType::Ack, reply.Bytes(), stopEvent);
+}
+
+PayloadWriter PipeServer::HandleProvision(const Message& message)
+{
+    PayloadReader reader(message.payload);
+    std::wstring sid;
+    SecureString password;
+    HRESULT hr = E_INVALIDARG;
+    if (reader.ReadString(&sid) && reader.ReadSecret(&password) && reader.AtEnd())
+    {
+        hr = secrets_.Save(sid, password);
+    }
+    LogLine(L"provision hr=0x%08X", static_cast<unsigned>(hr));
+    return ResultOnly(hr);
+}
+
+PayloadWriter PipeServer::HandleAuthorize(const Message& message)
+{
     PayloadReader reader(message.payload);
     std::wstring sid;
     HRESULT hr = E_INVALIDARG;
+    if (reader.ReadString(&sid) && reader.AtEnd() && IsValidSid(sid))
+    {
+        broker_.Authorize(sid);
+        hr = S_OK;
+    }
+    LogLine(L"authorize hr=0x%08X", static_cast<unsigned>(hr));
+    return ResultOnly(hr);
+}
 
-    if (message.type == MessageType::Provision)
+PayloadWriter PipeServer::HandleStartPairing(const Message& message)
+{
+    PayloadReader reader(message.payload);
+    std::wstring sid;
+    std::vector<std::wstring> texts;
+    if (!pairing_)
     {
-        SecureString password;
-        if (reader.ReadString(&sid) && reader.ReadSecret(&password) && reader.AtEnd())
-        {
-            hr = secrets_.Save(sid, password);
-        }
-        LogLine(L"provision hr=0x%08X", static_cast<unsigned>(hr));
+        return ResultOnly(HRESULT_FROM_WIN32(ERROR_NOT_FOUND));
     }
-    else if (message.type == MessageType::Authorize)
+    if (!reader.ReadString(&sid) || !reader.ReadStringList(&texts) || !reader.AtEnd() || !IsValidSid(sid))
     {
-        if (reader.ReadString(&sid) && reader.AtEnd() && IsValidSid(sid))
-        {
-            broker_.Authorize(sid);
-            hr = S_OK;
-        }
-        LogLine(L"authorize hr=0x%08X", static_cast<unsigned>(hr));
+        return ResultOnly(E_INVALIDARG);
     }
-    SendAck(pipe, hr, stopEvent);
+
+    std::vector<pairing_protocol::Endpoint> endpoints;
+    for (const std::wstring& text : texts)
+    {
+        std::optional<pairing_protocol::Endpoint> endpoint = pairing_protocol::ParseEndpoint(Utf8FromWide(text));
+        if (!endpoint)
+        {
+            return ResultOnly(E_INVALIDARG);
+        }
+        endpoints.push_back(std::move(*endpoint));
+    }
+
+    const std::optional<std::string> qr = pairing_->Start(sid, endpoints);
+    if (!qr)
+    {
+        return ResultOnly(E_FAIL);
+    }
+    PayloadWriter reply;
+    reply.WriteInt32(S_OK);
+    reply.WriteString(WideFromUtf8(*qr));
+    return reply;
+}
+
+PayloadWriter PipeServer::HandlePairingStatus()
+{
+    if (!pairing_)
+    {
+        return ResultOnly(HRESULT_FROM_WIN32(ERROR_NOT_FOUND));
+    }
+    const PairingStatus status = pairing_->Status();
+    PayloadWriter reply;
+    reply.WriteInt32(S_OK);
+    reply.WriteInt32(static_cast<int32_t>(status.stage));
+    reply.WriteString(status.code);
+    reply.WriteString(status.phoneName);
+    return reply;
+}
+
+PayloadWriter PipeServer::HandleConfirmPairing(const Message& message)
+{
+    PayloadReader reader(message.payload);
+    int32_t accepted = 0;
+    if (!pairing_ || !reader.ReadInt32(&accepted) || !reader.AtEnd())
+    {
+        return ResultOnly(E_INVALIDARG);
+    }
+    return ResultOnly(pairing_->ConfirmOnPc(accepted != 0) ? S_OK : E_ILLEGAL_STATE_CHANGE);
 }

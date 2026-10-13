@@ -22,7 +22,12 @@ enum class MessageType : uint16_t
     Provision = 4,
     Authorize = 5,
     Ack = 6,
+    StartPairing = 7,
+    PairingStatus = 8,
+    ConfirmPairing = 9,
 };
+
+constexpr MessageType LastMessageType = MessageType::ConfirmPairing;
 
 struct Message
 {

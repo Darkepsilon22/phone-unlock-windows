@@ -89,7 +89,7 @@ bool Transfer(HANDLE pipe, BYTE* buffer, DWORD size, bool writing, HANDLE stopEv
 
 bool IsKnownType(uint16_t type)
 {
-    return type >= static_cast<uint16_t>(MessageType::Wait) && type <= static_cast<uint16_t>(MessageType::Ack);
+    return type >= static_cast<uint16_t>(MessageType::Wait) && type <= static_cast<uint16_t>(LastMessageType);
 }
 }
 

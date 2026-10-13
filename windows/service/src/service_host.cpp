@@ -1,8 +1,11 @@
 #include "service_host.h"
+#include "api.h"
+#include "http_server.h"
 #include "log.h"
 #include "pipe_protocol.h"
 #include "pipe_server.h"
 #include <cstdio>
+#include <memory>
 #include <thread>
 
 namespace
@@ -11,6 +14,9 @@ constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlock\\logs";
 constexpr wchar_t ServiceLogFile[] = L"service.log";
 constexpr wchar_t ConsoleLogFile[] = L"console.log";
 constexpr wchar_t SecretsDirectory[] = L"%ProgramData%\\PhoneUnlock\\secrets";
+constexpr wchar_t StateDirectory[] = L"%ProgramData%\\PhoneUnlock\\state";
+constexpr wchar_t PairingsDirectory[] = L"%ProgramData%\\PhoneUnlock\\state\\pairings";
+constexpr wchar_t HttpsPrefix[] = L"https://+:47863/v1/";
 constexpr DWORD StopWaitHint = 5000;
 
 SERVICE_STATUS_HANDLE statusHandle = nullptr;
@@ -78,11 +84,34 @@ void RunService(HANDLE stop)
     LogLine(L"service started");
     SecretStore secrets(Expand(SecretsDirectory));
     AuthorizationBroker broker;
-    PipeServer logonUiServer(PipeRole::LogonUi, secrets, broker);
-    PipeServer adminServer(PipeRole::Administrator, secrets, broker);
+    PairingStore pairings(Expand(PairingsDirectory));
+
+    std::unique_ptr<PairingManager> pairing;
+    if (std::optional<PcIdentity> identity = LoadPcIdentity(Expand(StateDirectory)))
+    {
+        pairing = std::make_unique<PairingManager>(std::move(*identity), pairings);
+    }
+
+    PipeServer logonUiServer(PipeRole::LogonUi, secrets, broker, pairing.get());
+    PipeServer adminServer(PipeRole::Administrator, secrets, broker, pairing.get());
     std::thread adminThread([&adminServer, stop] { adminServer.Run(stop); });
+
+    std::unique_ptr<Api> api;
+    std::unique_ptr<HttpServer> https;
+    std::thread httpsThread;
+    if (pairing)
+    {
+        api = std::make_unique<Api>(*pairing);
+        https = std::make_unique<HttpServer>(HttpsPrefix, [&api](const HttpRequest& request) { return api->Handle(request); });
+        httpsThread = std::thread([&https, stop] { https->Run(stop); });
+    }
+
     logonUiServer.Run(stop);
     adminThread.join();
+    if (httpsThread.joinable())
+    {
+        httpsThread.join();
+    }
     LogLine(L"service stopped");
 }
 
