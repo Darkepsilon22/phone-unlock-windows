@@ -6,6 +6,8 @@ activityCompose = "1.13.0"
 coreKtx = "1.19.1"
 fragment = "1.9.1"
 biometric = "1.1.0"
+camerax = "1.6.2"
+zxing = "3.5.4"
 junit = "4.13.2"
 
 [libraries]
@@ -16,6 +18,10 @@ androidx-biometric = { group = "androidx.biometric", name = "biometric", version
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
