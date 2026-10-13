@@ -1,0 +1,66 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Windows : compiler et tester",
+      "type": "process",
+      "command": "powershell",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/build-windows.ps1"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Windows : tests unitaires",
+      "type": "process",
+      "command": "${workspaceFolder}/build/windows/service/Release/PhoneUnlockServiceTests.exe",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android : compiler",
+      "type": "process",
+      "command": "${workspaceFolder}/android/gradlew.bat",
+      "args": ["assembleDebug", "--console=plain"],
+      "options": { "cwd": "${workspaceFolder}/android" },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android : tests unitaires",
+      "type": "process",
+      "command": "${workspaceFolder}/android/gradlew.bat",
+      "args": ["testDebugUnitTest", "--console=plain"],
+      "options": { "cwd": "${workspaceFolder}/android" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android : installer sur le téléphone",
+      "type": "process",
+      "command": "${workspaceFolder}/android/gradlew.bat",
+      "args": ["installDebug", "--console=plain"],
+      "options": { "cwd": "${workspaceFolder}/android" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Gradle : arrêter les démons",
+      "type": "process",
+      "command": "${workspaceFolder}/android/gradlew.bat",
+      "args": ["--stop"],
+      "options": { "cwd": "${workspaceFolder}/android" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Nettoyer les artefacts",
+      "type": "process",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build, android/build, android/app/build"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

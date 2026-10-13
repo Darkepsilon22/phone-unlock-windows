@@ -1,4 +1,4 @@
-# Secrets et clés de signature : ne jamais versionner
+# Secrets et clés de signature
 *.jks
 *.keystore
 *.pfx
@@ -8,25 +8,37 @@
 local.properties
 secrets/
 
-# Build C++ / .NET
+# Compilation C++ / .NET
 build/
 out/
 bin/
 obj/
 x64/
+.vs/
 *.user
 *.suo
-.vs/
 CMakeUserPresets.json
+vcpkg_installed/
 
-# Android / Gradle
+# Android / Gradle / Kotlin
 .gradle/
+.kotlin/
+.idea/
+captures/
 *.apk
 *.aab
-captures/
-.idea/
 
-# VM et journaux
+# VS Code : seuls les fichiers partagés sont versionnés
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Temporaires et journaux
+*.tmp
 *.log
+
+# Machines virtuelles
 *.vdi
 *.vbox-prev

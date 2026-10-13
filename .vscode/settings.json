@@ -1,0 +1,18 @@
+{
+  "files.encoding": "utf8",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "[powershell]": {
+    "files.encoding": "utf8bom"
+  },
+  "cmake.sourceDirectory": "${workspaceFolder}/windows",
+  "cmake.buildDirectory": "${workspaceFolder}/build/windows",
+  "cmake.generator": "Visual Studio 17 2022",
+  "cmake.configureOnOpen": false,
+  "cmake.configureSettings": {
+    "CMAKE_TOOLCHAIN_FILE": "${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+    "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+  },
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "java.import.gradle.enabled": false
+}
