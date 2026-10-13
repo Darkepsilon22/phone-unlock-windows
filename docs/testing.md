@@ -27,14 +27,15 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Mêmes cas sans réseau | Rapport L1, complément | 13/10/2026 |
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
-
-### Procédures à exécuter
+| Serveur HTTPS, TLS 1.3, QR code d'association | `https server listening`, `400` CBOR `INVALID_PROOF`, `https POST /v1/pair certificate=0` | 13/10/2026 |
 
 **Serveur HTTPS et QR code (VM)**
 1. Copier `build\deploy` vers `C:\proto`, puis exécuter `vm-install-cp.ps1` et `vm-install-service.ps1` en administrateur.
 2. Lancer `PhoneUnlockService.exe pair --endpoint <IP du PC hôte>:47863` : le QR doit s'afficher.
-3. Lancer `curl -k -X POST https://localhost:47863/v1/pair` : il faut une réponse CBOR `INVALID_PROOF`, ou `UNSUPPORTED_TLS` si curl n'a pas négocié TLS 1.3. Une erreur de connexion indique un problème.
+3. Lancer `curl.exe -k -i -X POST --data-binary x -H "Content-Type: application/cbor" https://localhost:47863/v1/pair` : il faut une réponse `400` CBOR `INVALID_PROOF`. `403 UNSUPPORTED_TLS` signale que TLS 1.3 n'a pas été négocié. Sans corps, http.sys répond lui-même `411`.
 4. `service.log` doit contenir `https server listening`.
+
+### Procédures à exécuter
 
 **Association avec le téléphone** : à rédiger avec la partie Android.
 

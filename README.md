@@ -56,7 +56,7 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 - [x] L1 : faisabilité Windows, compte Microsoft en ligne et hors ligne, à condition de désactiver Hello uniquement
 - [x] L2 : spécification du protocole
 - [ ] L3 : application Android (clé StrongBox et signature biométrique validées ; association et déverrouillage à faire)
-- [ ] L4 : service et tuile (coffre, canaux locaux et soumission automatique validés ; HTTPS et association écrits et testés unitairement, **non validés en VM**)
+- [ ] L4 : service et tuile (coffre, canaux locaux et soumission automatique validés ; serveur HTTPS en TLS 1.3 et QR code validés en VM ; association de bout en bout à valider avec l'application)
 - [ ] L5 : installeur signé
 - [ ] L6 : recette
 
