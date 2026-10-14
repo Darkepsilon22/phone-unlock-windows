@@ -11,4 +11,5 @@ add_library(PhoneUnlockProtoCP SHARED
     src/PhoneUnlockProtoCP.def
 )
 
+phoneunlock_add_version(PhoneUnlockProtoCP VFT_DLL PhoneUnlockProtoCP.dll "PhoneUnlock : tuile de connexion")
 target_link_libraries(PhoneUnlockProtoCP PRIVATE PhoneUnlockShared bcrypt secur32 shlwapi ole32 gdi32 user32 advapi32 uuid)

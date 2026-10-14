@@ -36,7 +36,7 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 | S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret |
 | S07 détournement de l'IPC | Fait | Deux canaux à ACL distinctes, vérification du serveur par la tuile, échec fermé si le descripteur de sécurité ne peut pas être construit |
 | S08 saturation | Fait | 16 Ko, 8 requêtes simultanées, 3 essais d'association, 3 demandes de déverrouillage par minute et par compte (VM) |
-| S09 mise à jour malveillante | À faire | Signature des paquets (lot L5) |
+| S09 mise à jour malveillante | Partiel | Empreintes SHA-256 vérifiées par l'installeur avant et après copie, fichiers modifiables seulement par les administrateurs (droits contrôlés), compilation de test refusée hors VM, annulation complète en cas d'échec (D11, VM) ; APK signé : lot L5-2 |
 | S10 nouvelle biométrie | Fait | Clé invalidée à l'enrôlement (Android) |
 | S11 blocage du PC | Fait | Fournisseurs Windows conservés, tuile sans appel bloquant ; service arrêté brutalement : écran de verrouillage normal, « Service PhoneUnlock injoignable », PIN fonctionnel ; désinstallation complète sans trace, PIN fonctionnel après redémarrage (VM, 14/10/2026) |
 | S12 mauvaise demande | Partiel | Mode téléphone : tuile du compte affichée exigée, noms du PC et du compte signés et montrés avant l'empreinte, historique dans `service.log` (lignes `history`). Mode tuile (code à 4 chiffres) : lot 2b-2 |
@@ -54,6 +54,6 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 ## Récupération
 
 - Le PIN, Windows Hello et le mot de passe restent toujours disponibles : la tuile ne remplace aucun fournisseur.
-- Désactiver le produit : `vm-uninstall-cp.ps1` puis `vm-uninstall-service.ps1`. Le service, la liaison TLS, le pare-feu, le certificat, les associations et les secrets sont retirés.
+- Désactiver le produit : `uninstall.ps1` en administrateur. La tuile, le service, la liaison TLS, le pare-feu, le certificat, les associations et les secrets sont retirés.
 - En VM : restaurer un instantané (`VBoxManage snapshot win11-test restore <nom>`).
 - Le produit n'est jamais installé sur le PC principal avant validation complète, et uniquement avec ton accord.

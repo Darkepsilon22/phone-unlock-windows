@@ -15,7 +15,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 ### Règles
 
-- La tuile et le service ne sont installés **que dans la VM** `win11-test` (VirtualBox, sans Hyper-V). Les scripts `vm-install-*` refusent toute autre machine.
+- La tuile et le service ne sont installés **que dans la VM** `win11-test` (VirtualBox, sans Hyper-V). `install.ps1` refuse toute autre machine sans l'option `-AllowPhysicalMachine`, et refuse toujours une compilation de test hors VM.
 - Prendre un instantané avant chaque installation.
 - La carte réseau de la VM est en **accès par pont** sur le Wi-Fi de l'hôte : la VM a sa propre adresse, comme un vrai PC. En NAT, VirtualBox conserve l'adresse d'origine des connexions redirigées, que la règle de pare-feu « réseau local » de la VM rejette (constaté le 14/10/2026 dans `pfirewall.log`).
 - Une capture d'écran ne suffit pas : la preuve est le journal (`cp.log`, `service.log`) avec les codes renvoyés par Windows.
@@ -30,6 +30,10 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
 | Plantage du service (`Stop-Process -Force`) puis désinstallation complète et redémarrage | Écran de verrouillage normal, tuile « Service PhoneUnlock injoignable », PIN fonctionnel ; après désinstallation : service, tuile, DLL, liaison TLS, pare-feu et certificat absents, PIN fonctionnel | 14/10/2026 |
+| Installeur : mise à jour de l'installation existante (`install.ps1`) | « Certificat du PC conservé », « Liaison TLS conservée. », Pixel 5 toujours dans `phones` ; session ouverte depuis l'application et depuis la tuile sans nouvelle association (`status=0x00000000`) | 14/10/2026 |
+| Désinstallation (`uninstall.ps1`) puis redémarrage | Service, fichiers, clés de registre, certificat, pare-feu, liaison TLS et réservation d'URL absents ; seul `logs` reste ; PIN fonctionnel | 14/10/2026 |
+| Installation en échec : port 47863 occupé par un autre programme | « Le service ne répond pas sur le port 47863 », annulation ; mêmes contrôles qu'après désinstallation ; `https server setup failed error=32` | 14/10/2026 |
+| Installation neuve, `provision`, association, déverrouillage | Nouveau certificat, « Association enregistrée », session ouverte depuis l'application et depuis la tuile (`status=0x00000000`) | 14/10/2026 |
 | Révocation : `phones`, `revoke` ; téléphone refusé aussitôt (« n'est plus associé »), tuile « Aucun téléphone associé » ; nouvelle association du même téléphone, une seule entrée dans `phones`, déverrouillage de nouveau possible | Messages attendus, session ouverte après réassociation | 14/10/2026 |
 | Mode tuile : « Demander au téléphone », même code à 4 chiffres sur la tuile et le téléphone, autorisation par empreinte ; refus sur le téléphone (rien ne s'ouvre) ; expiration après 60 s (la tuile revient à l'état initial) | Session ouverte ; aucune ouverture en cas de refus ou d'expiration | 14/10/2026 |
 | Déverrouillage sans aucune connexion : point d'accès du Pixel 5, données mobiles coupées, PC hôte et VM sur ce point d'accès | L'application retrouve la VM sur le réseau du point d'accès (adresse 10.166.107.177 ajoutée à `pairing.cbor`), état « Verrouillé » puis session ouverte | 14/10/2026 |
@@ -40,13 +44,15 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Serveur HTTPS, TLS 1.3, QR code d'association | `https server listening`, `400` CBOR `INVALID_PROOF`, `https POST /v1/pair certificate=0` | 13/10/2026 |
 
 **Serveur HTTPS et QR code (VM)**
-1. Copier `build\deploy` vers `C:\proto`, puis exécuter `vm-install-cp.ps1` et `vm-install-service.ps1` en administrateur.
+1. Copier `build\package\PhoneUnlock-<version>` vers `C:\proto`, puis exécuter `install.ps1` en administrateur.
 2. Lancer `PhoneUnlockService.exe pair --endpoint <IP de la VM>:47863` : le QR doit s'afficher.
 3. Lancer `curl.exe -k -i -X POST --data-binary x -H "Content-Type: application/cbor" https://localhost:47863/v1/pair` : il faut une réponse `400` CBOR `INVALID_PROOF`. `403 UNSUPPORTED_TLS` signale que TLS 1.3 n'a pas été négocié. Sans corps, http.sys répond lui-même `411`.
 4. `service.log` doit contenir `https server listening`.
 
 ### Procédures à exécuter
 
+
+**Installeur (VM)** : prendre un instantané, puis `install.ps1` sur l'installation existante (mise à jour), `uninstall.ps1` et redémarrage, puis contrôle de l'absence du service, des fichiers, des clés `{512D55BA-…}`, du certificat, de la règle de pare-feu (`Get-NetFirewallRule -DisplayName 'PhoneUnlock*'`), de la liaison TLS et de la réservation d'URL (`netsh http show sslcert` et `urlacl`). Échec provoqué : dans une autre fenêtre, `$l = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Any, 47863); $l.Start()`, puis `install.ps1` doit tout annuler.
 
 **Mode tuile (VM et Pixel 5)** : verrouiller la VM, choisir la tuile Téléphone, cliquer « Demander au téléphone » ; la tuile affiche « Code NNNN » ; ouvrir PhoneUnlock, vérifier que le même code s'affiche, autoriser avec l'empreinte ; la session s'ouvre. Reste à vérifier : quatre demandes en une minute (« Trop de demandes » sur la tuile).
 

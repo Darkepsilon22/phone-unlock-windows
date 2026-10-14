@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 $source = Join-Path $root 'windows'
 $build = Join-Path $root 'build\windows'
-$deploy = Join-Path $root 'build\deploy'
+$packages = Join-Path $root 'build\package'
 $vcpkgRoot = if ($env:VCPKG_ROOT) { $env:VCPKG_ROOT } else { 'E:\dev\vcpkg' }
 $toolchain = Join-Path $vcpkgRoot 'scripts\buildsystems\vcpkg.cmake'
 
@@ -22,9 +22,22 @@ if ($LASTEXITCODE -ne 0) { throw 'Compilation en échec.' }
 & $ctest --test-dir $build -C Release --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw 'Tests en échec.' }
 
-if (Test-Path $deploy) { Remove-Item $deploy -Recurse -Force }
-New-Item -ItemType Directory -Force $deploy | Out-Null
-Copy-Item (Join-Path $build 'credential-provider\Release\PhoneUnlockProtoCP.dll') $deploy -Force
-Copy-Item (Join-Path $build 'service\Release\PhoneUnlockService.exe') $deploy -Force
-Copy-Item (Join-Path $PSScriptRoot 'vm-*.ps1') $deploy -Force
-Get-ChildItem $deploy
+$binaries = @(
+    (Join-Path $build 'service\Release\PhoneUnlockService.exe'),
+    (Join-Path $build 'credential-provider\Release\PhoneUnlockProtoCP.dll')
+)
+$version = (Get-Item $binaries[0]).VersionInfo.ProductVersion
+$package = Join-Path $packages "PhoneUnlock-$version"
+if (Test-Path $package) { Remove-Item $package -Recurse -Force }
+New-Item -ItemType Directory -Force $package | Out-Null
+Copy-Item $binaries $package -Force
+Copy-Item (Join-Path $PSScriptRoot 'install.ps1'), (Join-Path $PSScriptRoot 'uninstall.ps1') $package -Force
+
+$sums = foreach ($binary in $binaries) {
+    $name = Split-Path $binary -Leaf
+    "$((Get-FileHash (Join-Path $package $name) -Algorithm SHA256).Hash)  $name"
+}
+Set-Content (Join-Path $package 'SHA256SUMS.txt') $sums -Encoding Ascii
+
+"Paquet : $package"
+$sums

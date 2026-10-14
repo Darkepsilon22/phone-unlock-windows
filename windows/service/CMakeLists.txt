@@ -1,7 +1,5 @@
 find_package(unofficial-nayuki-qr-code-generator CONFIG REQUIRED)
 
-option(PHONEUNLOCK_TEST_COMMANDS "Inclut la commande de test authorize qui simule le telephone" OFF)
-
 add_library(PhoneUnlockServiceCore STATIC
     src/admin/account_password.cpp
     src/admin/admin_commands.cpp
@@ -53,6 +51,7 @@ target_link_libraries(PhoneUnlockServiceCore PUBLIC
 
 add_executable(PhoneUnlockService src/host/main.cpp)
 target_link_libraries(PhoneUnlockService PRIVATE PhoneUnlockServiceCore)
+phoneunlock_add_version(PhoneUnlockService VFT_APP PhoneUnlockService.exe "PhoneUnlock : service de déverrouillage")
 
 add_executable(PhoneUnlockServiceTests
     tests/cbor_tests.cpp

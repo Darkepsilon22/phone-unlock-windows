@@ -13,7 +13,7 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 | [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
 | [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
 | [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
-| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D10) |
+| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D11) |
 | [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
 
 ## Structure
@@ -25,7 +25,7 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 | `windows/credential-provider/` | Tuile Windows (DLL COM chargée par LogonUI) |
 | `windows/service/` | Service Windows : coffre, association, API HTTPS, commandes d'administration, tests |
 | `protocol/` | Spécification du protocole |
-| `scripts/` | Compilation Windows et installation dans la VM de test |
+| `scripts/` | Compilation Windows, installeur et désinstalleur |
 | `docs/` | Documentation |
 
 ## Prérequis (gratuits)
@@ -40,8 +40,8 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 ## Compiler et tester
 
 ```powershell
-scripts\build-windows.ps1                  # compile la tuile et le service, lance les 36 tests, prépare build\deploy
-scripts\build-windows.ps1 -TestCommands    # variante de test avec la commande authorize (jamais sur un vrai PC)
+scripts\build-windows.ps1                  # compile la tuile et le service, lance les tests, prépare build\package\PhoneUnlock-<version>
+scripts\build-windows.ps1 -TestCommands    # variante de test (version suffixée -test) avec la commande authorize, refusée hors VM
 
 cd android
 .\gradlew.bat assembleDebug testDebugUnitTest
@@ -58,7 +58,7 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 - [ ] L3 : application Android (clé StrongBox, association, état du PC et déverrouillage par bouton validés ; mode tuile validé en VM)
 - [ ] L4 : service et tuile (coffre, canaux locaux et soumission automatique validés ; serveur HTTPS en TLS 1.3, association et déverrouillage par le téléphone validés en VM ; mode tuile validé en VM)
 - [x] L4 bis : révocation d'un téléphone depuis le PC, validée en VM
-- [ ] L5 : installeur signé
+- [ ] L5 : installeur (installation, mise à jour, annulation sur erreur et désinstallation validées en VM) ; APK signé, diagnostic et documentation à faire
 - [ ] L6 : recette
 
 ## Limitations connues

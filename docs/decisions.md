@@ -84,3 +84,11 @@ L'application affiche l'état du PC tant qu'elle est ouverte : verrouillé, sess
 **Raison** : l'application ne tourne pas en arrière-plan (cahier des charges, D2). Après le clic sur la tuile, il faut prendre le téléphone, ouvrir l'application, comparer le code puis poser le doigt. Le risque ajouté est faible : la demande reste à usage unique, liée au `context_id` de cet écran, protégée par le code de correspondance et l'empreinte.
 
 **Autre changement** : la tuile n'a plus de champ mot de passe. Le PIN, le mot de passe et Windows Hello restent disponibles avec les tuiles de Windows.
+
+## D11 : pas de signature Authenticode, APK signé avec une clé locale (14/10/2026)
+
+**Décision** : les binaires Windows ne sont pas signés. L'installeur vérifie leurs empreintes SHA-256 (`SHA256SUMS.txt`, produit par la compilation) avant et après la copie, et les place dans `Program Files` et `System32`, que seuls les administrateurs peuvent modifier ; il contrôle ces droits. L'APK est signé avec une clé locale gardée hors du dépôt, dont le mot de passe est tapé à chaque signature et n'est enregistré nulle part.
+
+**Raisons** : une signature reconnue par Smart App Control exige un certificat payant (budget nul). Un certificat auto-signé devrait être ajouté aux magasins de confiance du PC : si sa clé fuyait, tout code signé avec elle y serait jugé de confiance. Ce qui empêche réellement une mise à jour malveillante (S09), c'est que seul un administrateur peut remplacer les fichiers installés.
+
+**Limites** : `SHA256SUMS.txt` voyage avec le paquet ; il détecte une copie corrompue ou incomplète, pas un paquet remplacé en entier. Quand le paquet passe par un autre support, comparer son `SHA256SUMS.txt` aux empreintes affichées par la compilation. Si Smart App Control est actif, il bloquerait la tuile : l'installeur s'arrête alors sans rien modifier. Sur le PC principal, il est désactivé (constaté le 14/10/2026).

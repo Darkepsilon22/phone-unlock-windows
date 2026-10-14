@@ -77,7 +77,7 @@ Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à t
 
 ## Choix techniques
 
-Les choix et leurs raisons sont dans [decisions.md](decisions.md) : D4 `http.sys`, D5 TLS 1.3, D6 format de sérialisation, D7 commande de test, D8 exécuteur de tests, D9 durée de la session d'association, D10 demande depuis la tuile.
+Les choix et leurs raisons sont dans [decisions.md](decisions.md) : D4 `http.sys`, D5 TLS 1.3, D6 format de sérialisation, D7 commande de test, D8 exécuteur de tests, D9 durée de la session d'association, D10 demande depuis la tuile, D11 signature des paquets.
 
 ## Conventions
 
