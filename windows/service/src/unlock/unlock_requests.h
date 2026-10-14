@@ -5,6 +5,7 @@
 #include "storage/pairing_store.h"
 #include "support/change_feed.h"
 #include "support/clock.h"
+#include "support/diagnostics.h"
 #include "unlock/unlock_protocol.h"
 #include <chrono>
 #include <condition_variable>
@@ -27,10 +28,10 @@ class UnlockRequests
 {
 public:
     using AccountNamer = std::function<std::string(const std::wstring& sid)>;
-    using WallClock = std::function<uint64_t()>;
 
-    UnlockRequests(LogonTiles& tiles, PairingStore& pairings, ChangeFeed& changes, cbor::Bytes pcId, std::string pcName,
-        AccountNamer accountName, MonotonicClock clock = SystemMilliseconds, WallClock unixSeconds = DefaultUnixSeconds);
+    UnlockRequests(LogonTiles& tiles, PairingStore& pairings, ChangeFeed& changes, Diagnostics& diagnostics,
+        cbor::Bytes pcId, std::string pcName, AccountNamer accountName, MonotonicClock clock = SystemMilliseconds,
+        WallClock unixSeconds = SystemUnixSeconds);
 
     HttpResponse Create(const Pairing& pairing);
     TileRequest CreateFromTile(const std::wstring& sid, const ContextId& context);
@@ -60,7 +61,6 @@ private:
         const char* error = nullptr;
     };
 
-    static uint64_t DefaultUnixSeconds();
     static bool IsFinal(Stage stage);
     static HttpResponse StageBody(const Entry& entry);
 
@@ -73,6 +73,7 @@ private:
     LogonTiles& tiles_;
     PairingStore& pairings_;
     ChangeFeed& changes_;
+    Diagnostics& diagnostics_;
     cbor::Bytes pcId_;
     std::string pcName_;
     AccountNamer accountName_;

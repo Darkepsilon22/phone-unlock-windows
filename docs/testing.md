@@ -30,6 +30,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
 | Plantage du service (`Stop-Process -Force`) puis désinstallation complète et redémarrage | Écran de verrouillage normal, tuile « Service PhoneUnlock injoignable », PIN fonctionnel ; après désinstallation : service, tuile, DLL, liaison TLS, pare-feu et certificat absents, PIN fonctionnel | 14/10/2026 |
+| Diagnostic `status` : après mise à jour, déverrouillage réussi, demande expirée, service arrêté, terminal non élevé | Service, versions 0.1.0, adresse, « répond en TLS 1.3 », mot de passe et Pixel 5 ; « Pixel 5, réussi » ; « demande expirée (EXPIRED), Pixel 5 » ; « arrêté », HTTPS erreur 12029, « Service injoignable » ; sans élévation (`IsInRole` = `False`) : contrôles locaux affichés puis « Accès refusé » | 14/10/2026 |
 | APK release signé : `revoke` sur le PC, désinstallation de la version debug, installation de `PhoneUnlock-0.1.0.apk`, nouvelle association, déverrouillage | `apksigner verify` : schéma v3, signataire `CN=PhoneUnlock` ; `run-as` refusé (« package not debuggable ») ; une seule entrée dans `phones` ; session ouverte depuis l'application et depuis la tuile (`status=0x00000000`) | 14/10/2026 |
 | Installeur : mise à jour de l'installation existante (`install.ps1`) | « Certificat du PC conservé », « Liaison TLS conservée. », Pixel 5 toujours dans `phones` ; session ouverte depuis l'application et depuis la tuile sans nouvelle association (`status=0x00000000`) | 14/10/2026 |
 | Désinstallation (`uninstall.ps1`) puis redémarrage | Service, fichiers, clés de registre, certificat, pare-feu, liaison TLS et réservation d'URL absents ; seul `logs` reste ; PIN fonctionnel | 14/10/2026 |
@@ -45,7 +46,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Serveur HTTPS, TLS 1.3, QR code d'association | `https server listening`, `400` CBOR `INVALID_PROOF`, `https POST /v1/pair certificate=0` | 13/10/2026 |
 
 **Serveur HTTPS et QR code (VM)**
-1. Copier `build\package\PhoneUnlock-<version>` vers `C:\proto`, puis exécuter `install.ps1` en administrateur.
+1. Copier `build\package\PhoneUnlock-<version>` vers `C:\proto`, puis exécuter `install.ps1` en administrateur. Dossier partagé en lecture seule : `VBoxManage sharedfolder add win11-test --name package --hostpath E:\empreinte\build\package --transient --readonly`, puis `Copy-Item \\VBoxSvr\package\PhoneUnlock-<version> C:\proto\ -Recurse` ; vérifier `SHA256SUMS.txt`, car deux compilations peuvent porter le même numéro de version.
 2. Lancer `PhoneUnlockService.exe pair --endpoint <IP de la VM>:47863` : le QR doit s'afficher.
 3. Lancer `curl.exe -k -i -X POST --data-binary x -H "Content-Type: application/cbor" https://localhost:47863/v1/pair` : il faut une réponse `400` CBOR `INVALID_PROOF`. `403 UNSUPPORTED_TLS` signale que TLS 1.3 n'a pas été négocié. Sans corps, http.sys répond lui-même `411`.
 4. `service.log` doit contenir `https server listening`.

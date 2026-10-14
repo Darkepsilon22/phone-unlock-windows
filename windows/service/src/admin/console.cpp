@@ -1,10 +1,13 @@
 #include "admin/console.h"
 #include <cstdio>
+#include <ctime>
+#include <cwchar>
 
 namespace
 {
 constexpr DWORD MaxSecretLength = 256;
 constexpr DWORD AnswerLength = 8;
+constexpr size_t DateLength = 32;
 
 DWORD WithoutLineEnding(const wchar_t* text, DWORD length)
 {
@@ -48,4 +51,16 @@ bool AskYesNo(const wchar_t* question)
     DWORD read = 0;
     ReadConsoleW(GetStdHandle(STD_INPUT_HANDLE), answer, AnswerLength, &read, nullptr);
     return read > 0 && (answer[0] == L'o' || answer[0] == L'O');
+}
+
+std::wstring LocalDateTime(const std::wstring& unixSeconds)
+{
+    const __time64_t seconds = _wcstoi64(unixSeconds.c_str(), nullptr, 10);
+    tm local = {};
+    wchar_t text[DateLength] = {};
+    if (_localtime64_s(&local, &seconds) != 0 || wcsftime(text, DateLength, L"%d/%m/%Y %H:%M", &local) == 0)
+    {
+        return L"?";
+    }
+    return text;
 }

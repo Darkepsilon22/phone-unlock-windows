@@ -60,7 +60,7 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 - [ ] L3 : application Android (clé StrongBox, association, état du PC et déverrouillage par bouton validés ; mode tuile validé en VM)
 - [ ] L4 : service et tuile (coffre, canaux locaux et soumission automatique validés ; serveur HTTPS en TLS 1.3, association et déverrouillage par le téléphone validés en VM ; mode tuile validé en VM)
 - [x] L4 bis : révocation d'un téléphone depuis le PC, validée en VM
-- [ ] L5 : installeur (installation, mise à jour, annulation sur erreur et désinstallation validées en VM) et APK signé validés ; diagnostic et documentation à faire
+- [ ] L5 : installeur (installation, mise à jour, annulation sur erreur et désinstallation), APK signé et diagnostic `status` validés ; documentation à faire
 - [ ] L6 : recette
 
 ## Limitations connues

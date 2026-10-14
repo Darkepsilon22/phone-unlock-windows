@@ -13,8 +13,9 @@ struct Fixture
     test_support::TemporaryDirectory directory;
     PairingStore pairings{ directory.Path() };
     ChangeFeed changes;
+    Diagnostics diagnostics;
     std::wstring lastSid;
-    StateEndpoint endpoint{ pairings, changes,
+    StateEndpoint endpoint{ pairings, changes, diagnostics,
         [this](const std::wstring& sid) {
             lastSid = sid;
             return AccountView{ SessionState::Locked, true };
@@ -78,7 +79,9 @@ TEST(StateWaitsForAChangeThenAnswersTheSameVersion)
 TEST(StateRefusesUnknownPhones)
 {
     Fixture fixture;
+    CHECK(!fixture.diagnostics.LastError());
     CHECK(fixture.endpoint.Handle(fixture.Request(L"", 0x07)).status == 403);
+    CHECK(fixture.diagnostics.LastError()->code == "REVOKED");
     HttpRequest anonymous = fixture.Request(L"");
     anonymous.clientFingerprint.reset();
     CHECK(fixture.endpoint.Handle(anonymous).status == 403);

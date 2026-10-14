@@ -3,7 +3,6 @@
 #include "encoding/text.h"
 #include "log.h"
 #include "network/api_errors.h"
-#include <ctime>
 
 using api_errors::BadRequest;
 using api_errors::Conflict;
@@ -31,11 +30,12 @@ enum ResultField : uint64_t
 };
 }
 
-UnlockRequests::UnlockRequests(LogonTiles& tiles, PairingStore& pairings, ChangeFeed& changes, cbor::Bytes pcId,
-    std::string pcName, AccountNamer accountName, MonotonicClock clock, WallClock unixSeconds)
+UnlockRequests::UnlockRequests(LogonTiles& tiles, PairingStore& pairings, ChangeFeed& changes, Diagnostics& diagnostics,
+    cbor::Bytes pcId, std::string pcName, AccountNamer accountName, MonotonicClock clock, WallClock unixSeconds)
     : tiles_(tiles),
       pairings_(pairings),
       changes_(changes),
+      diagnostics_(diagnostics),
       pcId_(std::move(pcId)),
       pcName_(std::move(pcName)),
       accountName_(std::move(accountName)),
@@ -176,6 +176,7 @@ void UnlockRequests::ReportLogonResult(const std::wstring& sid, LONG status)
         entry.error = status == 0 ? nullptr : "WINDOWS_REJECTED";
         LogLine(L"history unlock result phone=%s status=0x%08X", WideFromUtf8(entry.phoneName).c_str(),
             static_cast<unsigned>(status));
+        diagnostics_.RecordUnlock(entry.phoneName, status);
     }
     changed_.notify_all();
 }
@@ -231,11 +232,6 @@ bool UnlockRequests::Store(const std::wstring& sid, Entry entry)
     return true;
 }
 
-uint64_t UnlockRequests::DefaultUnixSeconds()
-{
-    return static_cast<uint64_t>(std::time(nullptr));
-}
-
 bool UnlockRequests::IsFinal(Stage stage)
 {
     return stage == Stage::LogonSucceeded || stage == Stage::LogonRejected || stage == Stage::Terminated;
@@ -280,5 +276,6 @@ HttpResponse UnlockRequests::Terminate(Entry& entry, USHORT status, const char* 
     entry.error = error;
     changed_.notify_all();
     LogLine(L"history unlock refused phone=%s reason=%S", WideFromUtf8(entry.phoneName).c_str(), error);
+    diagnostics_.RecordError(entry.phoneName, error);
     return api_errors::Error(status, error);
 }

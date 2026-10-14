@@ -101,6 +101,11 @@ HRESULT SecretStore::Load(const std::wstring& sid, SecureString* password) const
     return S_OK;
 }
 
+bool SecretStore::Exists(const std::wstring& sid) const
+{
+    return IsValidSid(sid) && GetFileAttributesW(PathFor(sid).c_str()) != INVALID_FILE_ATTRIBUTES;
+}
+
 std::wstring SecretStore::PathFor(const std::wstring& sid) const
 {
     return directory_ + L"\\" + sid + SecretExtension;

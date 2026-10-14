@@ -48,8 +48,9 @@ std::optional<cbor::Bytes> RequestIdIn(const std::wstring& path, const wchar_t* 
 }
 }
 
-UnlockEndpoint::UnlockEndpoint(PairingStore& pairings, UnlockRequests& requests, std::chrono::milliseconds resultWait)
-    : pairings_(pairings), requests_(requests), resultWait_(resultWait)
+UnlockEndpoint::UnlockEndpoint(PairingStore& pairings, UnlockRequests& requests, Diagnostics& diagnostics,
+    std::chrono::milliseconds resultWait)
+    : pairings_(pairings), requests_(requests), diagnostics_(diagnostics), resultWait_(resultWait)
 {
 }
 
@@ -64,6 +65,7 @@ HttpResponse UnlockEndpoint::Handle(const HttpRequest& request)
         request.clientFingerprint ? pairings_.FindByTransport(*request.clientFingerprint) : std::nullopt;
     if (!pairing)
     {
+        diagnostics_.RecordError({}, "REVOKED");
         return api_errors::Error(api_errors::Forbidden, "REVOKED");
     }
     if (!request.query.empty())

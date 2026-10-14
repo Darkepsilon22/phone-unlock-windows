@@ -2,7 +2,6 @@
 #include "admin/console.h"
 #include "admin/service_client.h"
 #include <cstdio>
-#include <ctime>
 #include <cwchar>
 #include <optional>
 #include <string>
@@ -15,7 +14,6 @@ using pipe_protocol::PayloadWriter;
 
 namespace
 {
-constexpr size_t DateLength = 32;
 constexpr size_t AnswerLength = 16;
 
 struct Phone
@@ -51,18 +49,6 @@ std::optional<std::vector<Phone>> ListPhones()
     return phones;
 }
 
-std::wstring LocalDate(const std::wstring& unixSeconds)
-{
-    const __time64_t seconds = _wcstoi64(unixSeconds.c_str(), nullptr, 10);
-    tm local = {};
-    wchar_t text[DateLength] = {};
-    if (_localtime64_s(&local, &seconds) != 0 || wcsftime(text, DateLength, L"%d/%m/%Y %H:%M", &local) == 0)
-    {
-        return L"?";
-    }
-    return text;
-}
-
 void PrintPhones(const std::vector<Phone>& phones)
 {
     if (phones.empty())
@@ -74,7 +60,7 @@ void PrintPhones(const std::vector<Phone>& phones)
     {
         const Phone& phone = phones[index];
         fwprintf(stdout, L"%zu. %s, associé le %s, compte %s\n", index + 1, phone.name.c_str(),
-            LocalDate(phone.createdAt).c_str(), phone.accountSid.c_str());
+            LocalDateTime(phone.createdAt).c_str(), phone.accountSid.c_str());
     }
 }
 

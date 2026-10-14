@@ -110,6 +110,7 @@ void RunService(HANDLE stop)
     LogLine(L"service started");
     SecretStore secrets(Expand(SecretsDirectory));
     ChangeFeed changes;
+    Diagnostics diagnostics;
     LogonTiles tiles(changes);
     SessionMonitor sessions(changes);
     sessionMonitor = &sessions;
@@ -125,9 +126,9 @@ void RunService(HANDLE stop)
         pairing.emplace(std::move(*identity), pairings);
     }
 
-    UnlockRequests unlockRequests(tiles, pairings, changes, pcId, pcName, AccountDisplayName);
+    UnlockRequests unlockRequests(tiles, pairings, changes, diagnostics, pcId, pcName, AccountDisplayName);
     LogonUiSession logonUiSession(secrets, tiles, unlockRequests);
-    AdminRequests adminRequests(secrets, tiles, pairings, pairing ? &*pairing : nullptr);
+    AdminRequests adminRequests(secrets, tiles, pairings, diagnostics, pairing ? &*pairing : nullptr);
     PipeServer logonUiServer(PipeRole::LogonUi, [&logonUiSession](HANDLE pipe, Message first, HANDLE connectionStop) {
         logonUiSession.Serve(pipe, std::move(first), connectionStop);
     });
@@ -139,10 +140,10 @@ void RunService(HANDLE stop)
     std::vector<std::thread> servers;
     servers.emplace_back([&adminServer, stop] { adminServer.Run(stop); });
 
-    StateEndpoint state(pairings, changes,
+    StateEndpoint state(pairings, changes, diagnostics,
         [&tiles, &sessions](const std::wstring& sid) { return DescribeAccount(tiles.Find(sid), sessions.Summary()); },
         pcName, StateLongPoll);
-    UnlockEndpoint unlock(pairings, unlockRequests, ResultLongPoll);
+    UnlockEndpoint unlock(pairings, unlockRequests, diagnostics, ResultLongPoll);
     std::optional<Api> api;
     std::optional<HttpServer> https;
     if (pairing)

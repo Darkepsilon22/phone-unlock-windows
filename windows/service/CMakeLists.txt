@@ -10,6 +10,7 @@ add_library(PhoneUnlockServiceCore STATIC
     src/admin/phones_command.cpp
     src/admin/qr_console.cpp
     src/admin/service_client.cpp
+    src/admin/status_command.cpp
     src/crypto/crypto.cpp
     src/encoding/cbor.cpp
     src/encoding/text.cpp
@@ -33,6 +34,7 @@ add_library(PhoneUnlockServiceCore STATIC
     src/storage/pairing_store.cpp
     src/storage/secret_store.cpp
     src/support/change_feed.cpp
+    src/support/diagnostics.cpp
     src/support/worker_group.cpp
     src/unlock/unlock_protocol.cpp
     src/unlock/unlock_requests.cpp
@@ -46,7 +48,7 @@ target_compile_definitions(PhoneUnlockServiceCore PUBLIC
 target_link_libraries(PhoneUnlockServiceCore PUBLIC
     PhoneUnlockShared
     unofficial::nayuki-qr-code-generator::nayuki-qr-code-generator
-    advapi32 bcrypt crypt32 httpapi iphlpapi netapi32 ws2_32 secur32
+    advapi32 bcrypt crypt32 httpapi iphlpapi netapi32 ws2_32 secur32 version winhttp
 )
 
 add_executable(PhoneUnlockService src/host/main.cpp)
@@ -57,6 +59,7 @@ add_executable(PhoneUnlockServiceTests
     tests/cbor_tests.cpp
     tests/change_feed_tests.cpp
     tests/crypto_tests.cpp
+    tests/diagnostics_tests.cpp
     tests/logon_tiles_tests.cpp
     tests/pairing_manager_tests.cpp
     tests/pairing_protocol_tests.cpp

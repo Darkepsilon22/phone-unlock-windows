@@ -16,8 +16,8 @@
                                            │                              │
                               ┌────────────▼────────────┐    ┌────────────▼────────────┐
                               │ PhoneUnlockProtoCP.dll  │    │ PhoneUnlockService.exe  │
-                              │ tuile dans LogonUI      │    │ commandes provision,    │
-                              │ (Credential Provider)   │    │ pair, console           │
+                              │ tuile dans LogonUI      │    │ provision, pair, phones,│
+                              │ (Credential Provider)   │    │ revoke, status, console │
                               └────────────┬────────────┘    └─────────────────────────┘
                                            │ KERB_INTERACTIVE_UNLOCK_LOGON
                                            ▼
@@ -31,7 +31,7 @@
 | `windows/shared` | Format du canal local (trames, `PayloadReader`/`Writer`), entrées-sorties superposées, journal, mémoire effacée (`SecureVector`, `SecureString`) | Windows uniquement |
 | `windows/credential-provider` | Tuile « Téléphone », écoute du service, connexion automatique, sérialisation des identifiants, retour du résultat Windows | `shared` |
 | `windows/service` | Service Windows : coffre du mot de passe, autorisations, association, API HTTPS, commandes d'administration | `shared`, Nayuki QR |
-| `android` | Clé d'autorisation, biométrie, signature ; association et déverrouillage à venir | AndroidX |
+| `android` | Clés Keystore, biométrie, signature, association, état du PC, déverrouillage | AndroidX, CameraX, ZXing |
 | `protocol/SPEC.md` | Contrat réseau entre le téléphone et le service | — |
 
 Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à travers `shared`.
@@ -41,29 +41,45 @@ Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à t
 | Dossier | Contenu |
 |---|---|
 | `host/` | Point d'entrée, hôte SCM et mode console, assemblage des composants |
-| `ipc/` | `PipeServer` (transport), `LogonUiSession` (dialogue avec la tuile), `AdminRequests` (commandes d'administration), `AuthorizationBroker` (autorisations à usage unique) |
-| `network/` | `HttpServer` (`http.sys`, TLS 1.3 exigé, certificat client), `Api` (routes), réponses d'erreur |
+| `ipc/` | `PipeServer` (transport), `LogonUiSession` (dialogue avec la tuile), `AdminRequests` (commandes d'administration), `LogonTiles` (tuiles affichées et autorisations à usage unique) |
+| `network/` | `HttpServer` (`http.sys`, TLS 1.3 exigé, certificat client), `Api` (routes), points d'accès d'état et de déverrouillage, réponses d'erreur |
+| `session/` | Suivi des sessions Windows par notifications, état du PC présenté au téléphone |
+| `unlock/` | Demandes d'autorisation : création, preuve signée, quota, résultat |
 | `pairing/` | `PairingManager` (états de l'association), `pairing_protocol` (QR, transcription, code), identité du PC |
 | `storage/` | `SecretStore` (DPAPI), `PairingStore`, écritures atomiques |
 | `encoding/`, `crypto/` | CBOR déterministe strict, UTF-8/hex/base64url, SHA-256, ECDSA P-256 via CNG |
 | `admin/` | Commandes en ligne de commande et affichage du QR |
-| `support/` | Groupe de threads, horloge monotone injectable |
+| `support/` | Groupe de threads, horloges injectables, flux de changements, `Diagnostics` (dernier déverrouillage et dernière erreur, en mémoire) |
 
 ## Flux
 
 ### Connexion ou déverrouillage
 
 1. LogonUI charge la tuile. Celle-ci crée un `ServiceListener` qui se connecte à `PhoneUnlock.LogonUi`, vérifie que l'autre extrémité est bien le processus du service (PID donné par le gestionnaire de services), puis envoie `Wait` avec les SID affichés.
-2. Une autorisation est créée pour un SID. Aujourd'hui, seule la commande de test le fait. Plus tard, ce sera la preuve signée du téléphone.
-3. Le service consomme l'autorisation (usage unique, 30 s), lit le mot de passe déchiffré et l'envoie (`Ready`).
+2. Une autorisation est créée pour un SID par la preuve signée du téléphone (`protocol/SPEC.md` §4), ou par la commande `authorize` des compilations de test.
+3. Le service consomme l'autorisation (usage unique), lit le mot de passe déchiffré et l'envoie (`Ready`).
 4. La tuile appelle `CredentialsChanged`, se désigne crédential par défaut avec connexion automatique, sérialise une seule fois, puis efface le mot de passe.
 5. Windows rend son verdict (`ReportResult`), que la tuile renvoie au service (`Result`).
 
-### Association (implémentée côté PC, non validée en VM)
+### Association
 
 1. `PhoneUnlockService pair` demande au service une session : jeton aléatoire de 256 bits, valable 5 minutes. Le QR contient l'identité du PC et les adresses.
 2. Le téléphone appelle `POST /v1/pair` avec son certificat de transport et sa clé d'autorisation. Le service répond avec `pairing_id`, puis les deux côtés calculent le même code à 6 chiffres.
 3. L'utilisatrice confirme sur le PC, puis sur le téléphone avec une signature biométrique (`POST /v1/pair/confirm`). Le service vérifie la signature et enregistre l'association.
+
+### Canal d'administration
+
+`PhoneUnlock.Admin` échange une requête et une réponse par connexion. Chaque réponse commence par un `HRESULT`.
+
+| Message | Requête | Réponse après le `HRESULT` |
+|---|---|---|
+| `Provision` (4) | SID, mot de passe | — |
+| `StartPairing` (7), `PairingStatus` (8), `ConfirmPairing` (9) | SID et adresses ; rien ; décision | QR ; étape, code, nom du téléphone ; — |
+| `ListPhones` (12) | — | nombre, puis identifiant, SID, nom et date de chaque association |
+| `RevokePhone` (13) | identifiant d'association | — |
+| `Status` (14) | SID du compte courant | mot de passe enregistré (0 ou 1, sans déchiffrement), noms des téléphones du compte, dernier déverrouillage (date, téléphone, statut Windows), dernière erreur (date, téléphone, code du protocole) ; chaînes vides si rien depuis le démarrage du service |
+
+`status` complète ces données par des contrôles faits sans le service : état et type de démarrage auprès du gestionnaire de services, versions des fichiers installés, enregistrement de la tuile, adresses locales, et une requête `GET /v1/` vers `127.0.0.1:47863` en TLS 1.3 sans certificat client. Cette requête ne transporte aucun secret et ne vérifie pas le certificat du PC ; une réponse `404` prouve que le service répond en TLS 1.3.
 
 ## Frontières de sécurité
 

@@ -39,9 +39,14 @@ std::optional<uint64_t> SinceVersion(const std::wstring& query)
 }
 }
 
-StateEndpoint::StateEndpoint(PairingStore& pairings, ChangeFeed& changes, ViewProvider views, std::string pcName,
-    std::chrono::milliseconds longPoll)
-    : pairings_(pairings), changes_(changes), views_(std::move(views)), pcName_(std::move(pcName)), longPoll_(longPoll)
+StateEndpoint::StateEndpoint(PairingStore& pairings, ChangeFeed& changes, Diagnostics& diagnostics, ViewProvider views,
+    std::string pcName, std::chrono::milliseconds longPoll)
+    : pairings_(pairings),
+      changes_(changes),
+      diagnostics_(diagnostics),
+      views_(std::move(views)),
+      pcName_(std::move(pcName)),
+      longPoll_(longPoll)
 {
 }
 
@@ -51,6 +56,7 @@ HttpResponse StateEndpoint::Handle(const HttpRequest& request)
         request.clientFingerprint ? pairings_.FindByTransport(*request.clientFingerprint) : std::nullopt;
     if (!pairing)
     {
+        diagnostics_.RecordError({}, "REVOKED");
         return api_errors::Error(api_errors::Forbidden, "REVOKED");
     }
     const std::optional<uint64_t> since = SinceVersion(request.query);

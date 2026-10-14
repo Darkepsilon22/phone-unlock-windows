@@ -29,7 +29,7 @@ public:
     UnlockFixture()
         : tiles_(changes_),
           pairings_(directory_.Path()),
-          requests_(tiles_, pairings_, changes_, cbor::Bytes(16, 3), "PC salon",
+          requests_(tiles_, pairings_, changes_, diagnostics_, cbor::Bytes(16, 3), "PC salon",
               [](const std::wstring&) { return std::string("hanjason"); }, clock_.Function(),
               [] { return uint64_t{ 1'760'000'000 }; })
     {
@@ -113,6 +113,11 @@ public:
         return requests_;
     }
 
+    const Diagnostics& Diagnosis() const
+    {
+        return diagnostics_;
+    }
+
     test_support::FakeClock& Clock()
     {
         return clock_;
@@ -156,6 +161,7 @@ public:
     PairingStore pairings_;
     test_support::FakeClock clock_;
     uint8_t contexts_ = 0;
+    Diagnostics diagnostics_;
     UnlockRequests requests_;
     GeneratedKey phoneKey_;
     Pairing pairing_;
@@ -180,6 +186,9 @@ TEST(SignedRequestUnlocksTheShownTileOnce)
 
     fixture.Requests().ReportLogonResult(Alice, 0);
     CHECK(fixture.ResultState(fixture.Last()) == "logon_succeeded");
+    CHECK(fixture.Diagnosis().LastUnlock()->status == 0);
+    CHECK(fixture.Diagnosis().LastUnlock()->phoneName == "Pixel 5");
+    CHECK(!fixture.Diagnosis().LastError());
 }
 
 TEST(ReplayedProofIsRejected)
@@ -248,6 +257,8 @@ TEST(ForgedSignatureEndsTheRequest)
     const HttpResponse forged = fixture.Prove(true);
     CHECK(forged.status == 400);
     CHECK(UnlockFixture::ErrorCode(forged) == "INVALID_PROOF");
+    CHECK(fixture.Diagnosis().LastError()->code == "INVALID_PROOF");
+    CHECK(fixture.Diagnosis().LastError()->phoneName == "Pixel 5");
     CHECK(fixture.Prove().status == 410);
 }
 
@@ -303,6 +314,8 @@ TEST(WindowsRejectionIsReported)
     fixture.Prove();
     fixture.Requests().ReportLogonResult(Alice, static_cast<LONG>(0xC000006D));
     CHECK(fixture.ResultState(fixture.Last()) == "logon_rejected");
+    CHECK(fixture.Diagnosis().LastUnlock()->status == static_cast<LONG>(0xC000006D));
+    CHECK(fixture.Diagnosis().LastError()->code == "WINDOWS_REJECTED");
 }
 
 TEST(MalformedProofIsRejected)

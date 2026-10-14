@@ -33,8 +33,8 @@ std::optional<std::vector<pairing_protocol::Endpoint>> ParseEndpoints(const std:
 }
 
 AdminRequests::AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingStore& pairings,
-    PairingManager* pairing)
-    : secrets_(secrets), tiles_(tiles), pairings_(pairings), pairing_(pairing)
+    const Diagnostics& diagnostics, PairingManager* pairing)
+    : secrets_(secrets), tiles_(tiles), pairings_(pairings), diagnostics_(diagnostics), pairing_(pairing)
 {
 }
 
@@ -57,6 +57,8 @@ PayloadWriter AdminRequests::Handle(const Message& request)
         return ListPhones();
     case MessageType::RevokePhone:
         return RevokePhone(request);
+    case MessageType::Status:
+        return Status(request);
     default:
         return ResultOnly(E_INVALIDARG);
     }
@@ -180,4 +182,39 @@ PayloadWriter AdminRequests::RevokePhone(const Message& request)
     const HRESULT hr = pairingId ? pairings_.Remove(*pairingId) : E_INVALIDARG;
     LogLine(L"history phone revoked hr=0x%08X", static_cast<unsigned>(hr));
     return ResultOnly(hr);
+}
+
+PayloadWriter AdminRequests::Status(const Message& request)
+{
+    PayloadReader reader(request.payload);
+    std::wstring sid;
+    if (!reader.ReadString(&sid) || !reader.AtEnd() || !IsValidSid(sid))
+    {
+        return ResultOnly(E_INVALIDARG);
+    }
+    std::vector<std::wstring> phones;
+    for (const Pairing& pairing : pairings_.All())
+    {
+        if (pairing.accountSid == sid)
+        {
+            phones.push_back(WideFromUtf8(pairing.phoneName));
+        }
+    }
+    const std::optional<UnlockOutcome> unlock = diagnostics_.LastUnlock();
+    const std::optional<RecordedError> error = diagnostics_.LastError();
+
+    PayloadWriter reply;
+    const bool written = reply.WriteInt32(S_OK) && reply.WriteInt32(secrets_.Exists(sid) ? 1 : 0) &&
+        reply.WriteStringList(phones) &&
+        reply.WriteString(unlock ? std::to_wstring(unlock->unixSeconds) : std::wstring()) &&
+        reply.WriteString(unlock ? WideFromUtf8(unlock->phoneName) : std::wstring()) &&
+        reply.WriteInt32(unlock ? unlock->status : 0) &&
+        reply.WriteString(error ? std::to_wstring(error->unixSeconds) : std::wstring()) &&
+        reply.WriteString(error ? WideFromUtf8(error->phoneName) : std::wstring()) &&
+        reply.WriteString(error ? WideFromUtf8(error->code) : std::wstring());
+    if (!written)
+    {
+        return ResultOnly(E_OUTOFMEMORY);
+    }
+    return reply;
 }
