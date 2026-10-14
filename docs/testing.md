@@ -4,8 +4,8 @@
 
 | Suite | Commande | Contenu | Dernier résultat |
 |---|---|---|---|
-| Service Windows | `scripts\build-windows.ps1` (CTest) | 36 tests : CBOR strict, SHA-256, ECDSA P-256, courtier d'autorisations, stockage des associations, protocole et gestionnaire d'association | 36/36 le 13/10/2026 |
-| Android | `android\gradlew.bat testDebugUnitTest` | 4 tests : conversion de signature DER vers `r‖s` | 4/4 le 13/10/2026 |
+| Service Windows | `scripts\build-windows.ps1` (CTest) | 92 tests : CBOR strict, SHA-256, ECDSA P-256, tuiles et autorisations à usage unique, stockage et révocation des associations, protocole et gestionnaire d'association, demandes de déverrouillage, état du PC, diagnostic | 92/92 le 14/10/2026 |
+| Android | `android\gradlew.bat testDebugUnitTest` | 47 tests : CBOR strict, épinglage TLS, QR et échange d'association, enregistrement de l'association, demande d'autorisation et code de correspondance, signature DER vers `r‖s` | 47/47 le 14/10/2026 |
 
 Les tâches VS Code « Windows : compiler et tester » et « Android : tests unitaires » lancent ces suites. Les workflows GitHub Actions `windows-build.yml` et `android-build.yml` se déclenchent **manuellement** (onglet Actions), pour préserver le quota gratuit.
 
@@ -52,7 +52,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 3. Lancer `curl.exe -k -i -X POST --data-binary x -H "Content-Type: application/cbor" https://localhost:47863/v1/pair` : il faut une réponse `400` CBOR `INVALID_PROOF`. `403 UNSUPPORTED_TLS` signale que TLS 1.3 n'a pas été négocié. Sans corps, http.sys répond lui-même `411`.
 4. `service.log` doit contenir `https server listening`.
 
-### Procédures à exécuter
+### Procédures détaillées et tests restants
 
 
 **Installeur (VM)** : prendre un instantané, puis `install.ps1` sur l'installation existante (mise à jour), `uninstall.ps1` et redémarrage, puis contrôle de l'absence du service, des fichiers, des clés `{512D55BA-…}`, du certificat, de la règle de pare-feu (`Get-NetFirewallRule -DisplayName 'PhoneUnlock*'`), de la liaison TLS et de la réservation d'URL (`netsh http show sslcert` et `urlacl`). Échec provoqué : dans une autre fenêtre, `$l = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Any, 47863); $l.Start()`, puis `install.ps1` doit tout annuler.
@@ -79,4 +79,4 @@ Cas d'échec (validés le 14/10/2026) : confirmer sur le téléphone avant le PC
 
 ## Recette du cahier des charges
 
-Les tests T01 à T26 seront tracés dans le rapport de recette (lot L6). Couverture actuelle, partielle : T05 et T06 (connexion après redémarrage, déverrouillage) avec mot de passe saisi ou fourni par le service, T07 et T08 sur le téléphone seul (la signature n'est pas encore reliée au PC). Aucun autre test de recette n'a été exécuté.
+Les tests T01 à T26 seront exécutés et tracés dans le rapport de recette (lot L6). Les procédures validées ci-dessus en couvrent déjà une partie, dans la VM et sur le Pixel 5 ; la correspondance test par test sera établie dans ce rapport.

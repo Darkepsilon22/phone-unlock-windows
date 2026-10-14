@@ -2,7 +2,7 @@
 
 Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (compte Microsoft) avec l'empreinte d'un téléphone Android, sur le réseau local et sans service cloud. Le téléphone signe une demande après biométrie, et une tuile Windows soumet alors le mot de passe du compte, conservé chiffré par un service local. Windows reste seul juge de l'ouverture de session.
 
-**État : prototype.** Ne pas installer sur un PC principal. Lire [docs/security.md](docs/security.md) avant tout usage.
+**État : prototype.** Ne pas installer sur un PC principal avant la recette (lot L6). Lire [docs/security.md](docs/security.md) puis [docs/install.md](docs/install.md) avant tout usage.
 
 ## Documentation
 
@@ -10,11 +10,13 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 |---|---|
 | [docs/Cahier_des_charges.pdf](docs/Cahier_des_charges.pdf) | Besoin et exigences (v1.1) |
 | [protocol/SPEC.md](protocol/SPEC.md) | Protocole téléphone ↔ PC |
+| [docs/install.md](docs/install.md) | Installation, mise à jour, diagnostic, désinstallation, récupération |
 | [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
 | [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
 | [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
 | [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D11) |
 | [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
+| [docs/third-party.md](docs/third-party.md) | Composants tiers et licences |
 
 ## Structure
 
@@ -57,12 +59,12 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 - [x] L0 : outils, VM de test
 - [x] L1 : faisabilité Windows, compte Microsoft en ligne et hors ligne, à condition de désactiver Hello uniquement
 - [x] L2 : spécification du protocole
-- [ ] L3 : application Android (clé StrongBox, association, état du PC et déverrouillage par bouton validés ; mode tuile validé en VM)
-- [ ] L4 : service et tuile (coffre, canaux locaux et soumission automatique validés ; serveur HTTPS en TLS 1.3, association et déverrouillage par le téléphone validés en VM ; mode tuile validé en VM)
+- [x] L3 : application Android : clés StrongBox, association, état du PC en temps réel, déverrouillage par bouton et par tuile, validés sur Pixel 5
+- [x] L4 : service et tuile : coffre, canaux locaux, soumission automatique, serveur HTTPS en TLS 1.3, association, déverrouillage depuis le téléphone et depuis la tuile, validés en VM
 - [x] L4 bis : révocation d'un téléphone depuis le PC, validée en VM
-- [ ] L5 : installeur (installation, mise à jour, annulation sur erreur et désinstallation), APK signé et diagnostic `status` validés ; documentation à faire
+- [x] L5 : installeur avec annulation sur erreur, APK signé, diagnostic `status`, protection des dossiers de données, documentation
 - [ ] L6 : recette
 
 ## Limitations connues
 
-Hello uniquement doit être désactivé. Le mot de passe du compte est conservé chiffré sur le PC. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md).
+Hello uniquement doit être désactivé. Le mot de passe du compte est conservé chiffré sur le PC. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md) ; secours dans [docs/install.md](docs/install.md), section 8.
