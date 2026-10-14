@@ -32,8 +32,8 @@ std::optional<std::vector<pairing_protocol::Endpoint>> ParseEndpoints(const std:
 }
 }
 
-AdminRequests::AdminRequests(const SecretStore& secrets, AuthorizationBroker& broker, PairingManager* pairing)
-    : secrets_(secrets), broker_(broker), pairing_(pairing)
+AdminRequests::AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingManager* pairing)
+    : secrets_(secrets), tiles_(tiles), pairing_(pairing)
 {
 }
 
@@ -79,8 +79,8 @@ PayloadWriter AdminRequests::Authorize([[maybe_unused]] const Message& request)
     HRESULT hr = E_INVALIDARG;
     if (reader.ReadString(&sid) && reader.AtEnd() && IsValidSid(sid))
     {
-        broker_.Authorize(sid);
-        hr = S_OK;
+        const std::optional<TileView> tile = tiles_.Find(sid);
+        hr = tile && tiles_.Authorize(sid, tile->context) ? S_OK : HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
     }
     LogLine(L"test authorization hr=0x%08X", static_cast<unsigned>(hr));
     return ResultOnly(hr);

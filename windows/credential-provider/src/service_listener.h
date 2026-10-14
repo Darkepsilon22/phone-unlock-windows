@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "pipe_protocol.h"
 #include "secure_vector.h"
 #include <windows.h>
 #include <functional>
@@ -14,7 +15,7 @@ class ServiceListener
 public:
     using ReadyHandler = std::function<void(const std::wstring& sid, SecureString password)>;
 
-    ServiceListener(std::vector<std::wstring> sids, ReadyHandler onReady);
+    ServiceListener(pipe_protocol::TileScenario scenario, std::vector<std::wstring> sids, ReadyHandler onReady);
     ~ServiceListener();
 
     ServiceListener(const ServiceListener&) = delete;
@@ -38,6 +39,7 @@ private:
     void Converse(HANDLE pipe);
     bool SendResultWhenReady(HANDLE pipe);
 
+    pipe_protocol::TileScenario scenario_;
     std::vector<std::wstring> sids_;
     ReadyHandler onReady_;
     HANDLE stopEvent_;

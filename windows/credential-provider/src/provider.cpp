@@ -254,7 +254,9 @@ void Provider::StartListener()
     }
 
     StopListener();
-    auto listener = std::make_shared<ServiceListener>(std::move(sids),
+    const auto scenario = scenario_ == CPUS_UNLOCK_WORKSTATION ? pipe_protocol::TileScenario::Unlock
+                                                               : pipe_protocol::TileScenario::Logon;
+    auto listener = std::make_shared<ServiceListener>(scenario, std::move(sids),
         [this](const std::wstring& sid, SecureString password) { OnServiceReady(sid, std::move(password)); });
     std::lock_guard lock(mutex_);
     listener_ = std::move(listener);

@@ -15,6 +15,11 @@ bool IsConnected(HANDLE pipe)
     return PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr) != FALSE;
 }
 
+bool IsKnownScenario(int32_t scenario)
+{
+    return scenario == static_cast<int32_t>(TileScenario::Logon) || scenario == static_cast<int32_t>(TileScenario::Unlock);
+}
+
 bool IsSignaled(HANDLE event)
 {
     return WaitForSingleObject(event, 0) == WAIT_OBJECT_0;
@@ -34,8 +39,7 @@ void LogResult(const Message& message)
 }
 }
 
-LogonUiSession::LogonUiSession(const SecretStore& secrets, AuthorizationBroker& broker)
-    : secrets_(secrets), broker_(broker)
+LogonUiSession::LogonUiSession(const SecretStore& secrets, LogonTiles& tiles) : secrets_(secrets), tiles_(tiles)
 {
 }
 
@@ -51,8 +55,11 @@ void LogonUiSession::Serve(HANDLE pipe, Message message, HANDLE stopEvent)
         else if (message.type == MessageType::Wait)
         {
             std::vector<std::wstring> sids;
+            int32_t scenario = 0;
             PayloadReader reader(message.payload);
-            if (!reader.ReadStringList(&sids) || !reader.AtEnd() || !WaitAndSendReady(pipe, sids, stopEvent))
+            if (!reader.ReadStringList(&sids) || !reader.ReadInt32(&scenario) || !reader.AtEnd() ||
+                !IsKnownScenario(scenario) ||
+                !WaitAndSendReady(pipe, static_cast<TileScenario>(scenario), std::move(sids), stopEvent))
             {
                 return;
             }
@@ -71,25 +78,34 @@ void LogonUiSession::Serve(HANDLE pipe, Message message, HANDLE stopEvent)
     }
 }
 
-bool LogonUiSession::WaitAndSendReady(HANDLE pipe, const std::vector<std::wstring>& sids, HANDLE stopEvent)
+bool LogonUiSession::WaitAndSendReady(HANDLE pipe, TileScenario scenario, std::vector<std::wstring> sids,
+    HANDLE stopEvent)
 {
+    const std::optional<uint64_t> ticket = tiles_.Register(scenario, std::move(sids));
+    if (!ticket)
+    {
+        return false;
+    }
     const auto keepWaiting = [pipe, stopEvent] { return !IsSignaled(stopEvent) && IsConnected(pipe); };
+    bool sent = false;
     for (;;)
     {
-        const std::optional<std::wstring> sid = broker_.WaitForAuthorization(sids, keepWaiting);
+        const std::optional<std::wstring> sid = tiles_.WaitForAuthorization(*ticket, keepWaiting);
         if (!sid)
         {
-            return false;
+            break;
         }
-
         SecureString password;
         const HRESULT hr = secrets_.Load(*sid, &password);
         if (SUCCEEDED(hr))
         {
-            return SendReady(pipe, *sid, password, stopEvent);
+            sent = SendReady(pipe, *sid, password, stopEvent);
+            break;
         }
         LogLine(L"secret unavailable hr=0x%08X", static_cast<unsigned>(hr));
     }
+    tiles_.Unregister(*ticket);
+    return sent;
 }
 
 bool LogonUiSession::SendReady(HANDLE pipe, const std::wstring& sid, const SecureString& password, HANDLE stopEvent)

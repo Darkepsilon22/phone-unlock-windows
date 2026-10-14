@@ -5,7 +5,11 @@
 #include "log.h"
 #include "network/api.h"
 #include "network/http_server.h"
+#include "network/state_endpoint.h"
+#include "session/session_monitor.h"
 #include "pipe_io.h"
+#include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <optional>
 #include <thread>
@@ -25,10 +29,12 @@ constexpr wchar_t StateDirectory[] = L"%ProgramData%\\PhoneUnlock\\state";
 constexpr wchar_t PairingsDirectory[] = L"%ProgramData%\\PhoneUnlock\\state\\pairings";
 constexpr wchar_t HttpsPrefix[] = L"https://+:47863/v1/";
 constexpr DWORD StopWaitHint = 5000;
+constexpr auto StateLongPoll = std::chrono::seconds(25);
 
 SERVICE_STATUS_HANDLE statusHandle = nullptr;
 SERVICE_STATUS status = {};
 HANDLE serviceStopEvent = nullptr;
+std::atomic<SessionMonitor*> sessionMonitor = nullptr;
 
 std::wstring Expand(PCWSTR path)
 {
@@ -41,7 +47,8 @@ void ReportStatus(DWORD state, DWORD exitCode = NO_ERROR)
     status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
     status.dwCurrentState = state;
     status.dwWin32ExitCode = exitCode;
-    status.dwControlsAccepted = state == SERVICE_RUNNING ? SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN : 0;
+    status.dwControlsAccepted =
+        state == SERVICE_RUNNING ? SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN | SERVICE_ACCEPT_SESSIONCHANGE : 0;
     status.dwWaitHint = state == SERVICE_RUNNING ? 0 : StopWaitHint;
     SetServiceStatus(statusHandle, &status);
 }
@@ -52,6 +59,14 @@ DWORD WINAPI ControlHandler(DWORD control, DWORD, void*, void*)
     {
         ReportStatus(SERVICE_STOP_PENDING);
         SetEvent(serviceStopEvent);
+        return NO_ERROR;
+    }
+    if (control == SERVICE_CONTROL_SESSIONCHANGE)
+    {
+        if (SessionMonitor* monitor = sessionMonitor.load())
+        {
+            monitor->Refresh();
+        }
         return NO_ERROR;
     }
     return control == SERVICE_CONTROL_INTERROGATE ? NO_ERROR : ERROR_CALL_NOT_IMPLEMENTED;
@@ -90,17 +105,23 @@ void RunService(HANDLE stop)
 {
     LogLine(L"service started");
     SecretStore secrets(Expand(SecretsDirectory));
-    AuthorizationBroker broker;
+    ChangeFeed changes;
+    LogonTiles tiles(changes);
+    SessionMonitor sessions(changes);
+    sessions.Refresh();
+    sessionMonitor = &sessions;
     PairingStore pairings(Expand(PairingsDirectory));
 
     std::optional<PairingManager> pairing;
+    std::string pcName;
     if (std::optional<PcIdentity> identity = LoadPcIdentity(Expand(StateDirectory)))
     {
+        pcName = identity->name;
         pairing.emplace(std::move(*identity), pairings);
     }
 
-    LogonUiSession logonUiSession(secrets, broker);
-    AdminRequests adminRequests(secrets, broker, pairing ? &*pairing : nullptr);
+    LogonUiSession logonUiSession(secrets, tiles);
+    AdminRequests adminRequests(secrets, tiles, pairing ? &*pairing : nullptr);
     PipeServer logonUiServer(PipeRole::LogonUi, [&logonUiSession](HANDLE pipe, Message first, HANDLE connectionStop) {
         logonUiSession.Serve(pipe, std::move(first), connectionStop);
     });
@@ -112,11 +133,14 @@ void RunService(HANDLE stop)
     std::vector<std::thread> servers;
     servers.emplace_back([&adminServer, stop] { adminServer.Run(stop); });
 
+    StateEndpoint state(pairings, changes,
+        [&tiles, &sessions](const std::wstring& sid) { return DescribeAccount(tiles.Find(sid), sessions.Snapshot(), sid); },
+        pcName, StateLongPoll);
     std::optional<Api> api;
     std::optional<HttpServer> https;
     if (pairing)
     {
-        api.emplace(*pairing);
+        api.emplace(*pairing, state);
         https.emplace(HttpsPrefix, [&api](const HttpRequest& request) { return api->Handle(request); });
         servers.emplace_back([&https, stop] { https->Run(stop); });
     }
@@ -130,6 +154,7 @@ void RunService(HANDLE stop)
     {
         server.join();
     }
+    sessionMonitor = nullptr;
     LogLine(L"service stopped");
 }
 

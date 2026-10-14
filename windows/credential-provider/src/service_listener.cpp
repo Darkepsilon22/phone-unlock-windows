@@ -33,8 +33,10 @@ DWORD ServiceProcessId()
 }
 }
 
-ServiceListener::ServiceListener(std::vector<std::wstring> sids, ReadyHandler onReady)
-    : sids_(std::move(sids)),
+ServiceListener::ServiceListener(pipe_protocol::TileScenario scenario, std::vector<std::wstring> sids,
+    ReadyHandler onReady)
+    : scenario_(scenario),
+      sids_(std::move(sids)),
       onReady_(std::move(onReady)),
       stopEvent_(CreateEventW(nullptr, TRUE, FALSE, nullptr)),
       resultEvent_(CreateEventW(nullptr, FALSE, FALSE, nullptr))
@@ -123,7 +125,7 @@ void ServiceListener::Converse(HANDLE pipe)
     for (;;)
     {
         PayloadWriter wait;
-        if (!wait.WriteStringList(sids_) ||
+        if (!wait.WriteStringList(sids_) || !wait.WriteInt32(static_cast<int32_t>(scenario_)) ||
             !pipe_protocol::WriteMessage(pipe, MessageType::Wait, wait.Bytes(), stopEvent_))
         {
             return;

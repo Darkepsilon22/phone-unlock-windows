@@ -16,18 +16,22 @@ add_library(PhoneUnlockServiceCore STATIC
     src/encoding/text.cpp
     src/host/service_host.cpp
     src/ipc/admin_requests.cpp
-    src/ipc/authorization_broker.cpp
+    src/ipc/logon_tiles.cpp
     src/ipc/logon_ui_session.cpp
     src/ipc/pipe_server.cpp
     src/network/api.cpp
     src/network/api_errors.cpp
     src/network/http_server.cpp
+    src/network/state_endpoint.cpp
     src/pairing/pairing_manager.cpp
     src/pairing/pairing_protocol.cpp
     src/pairing/pc_identity.cpp
+    src/session/pc_state.cpp
+    src/session/session_monitor.cpp
     src/storage/file_io.cpp
     src/storage/pairing_store.cpp
     src/storage/secret_store.cpp
+    src/support/change_feed.cpp
     src/support/worker_group.cpp
 )
 
@@ -39,19 +43,22 @@ target_compile_definitions(PhoneUnlockServiceCore PUBLIC
 target_link_libraries(PhoneUnlockServiceCore PUBLIC
     PhoneUnlockShared
     unofficial::nayuki-qr-code-generator::nayuki-qr-code-generator
-    advapi32 bcrypt crypt32 httpapi iphlpapi netapi32 ws2_32 secur32
+    advapi32 bcrypt crypt32 httpapi iphlpapi netapi32 ws2_32 secur32 wtsapi32
 )
 
 add_executable(PhoneUnlockService src/host/main.cpp)
 target_link_libraries(PhoneUnlockService PRIVATE PhoneUnlockServiceCore)
 
 add_executable(PhoneUnlockServiceTests
-    tests/authorization_broker_tests.cpp
     tests/cbor_tests.cpp
+    tests/change_feed_tests.cpp
     tests/crypto_tests.cpp
+    tests/logon_tiles_tests.cpp
     tests/pairing_manager_tests.cpp
     tests/pairing_protocol_tests.cpp
     tests/pairing_store_tests.cpp
+    tests/pc_state_tests.cpp
+    tests/state_endpoint_tests.cpp
     tests/test_runner.cpp
     tests/test_support.cpp
 )

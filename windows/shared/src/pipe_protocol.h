@@ -29,6 +29,12 @@ enum class MessageType : uint16_t
 
 constexpr MessageType LastMessageType = MessageType::ConfirmPairing;
 
+enum class TileScenario : int32_t
+{
+    Logon = 1,
+    Unlock = 2,
+};
+
 struct Message
 {
     MessageType type = MessageType::Ack;

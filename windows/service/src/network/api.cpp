@@ -6,9 +6,10 @@ namespace
 {
 constexpr wchar_t PairPath[] = L"/v1/pair";
 constexpr wchar_t PairConfirmPath[] = L"/v1/pair/confirm";
+constexpr wchar_t StatePath[] = L"/v1/state";
 }
 
-Api::Api(PairingManager& pairing) : pairing_(pairing)
+Api::Api(PairingManager& pairing, StateEndpoint& state) : pairing_(pairing), state_(state)
 {
 }
 
@@ -24,6 +25,10 @@ HttpResponse Api::Handle(const HttpRequest& request)
     if (request.verb == HttpVerbPOST && request.path == PairConfirmPath)
     {
         return pairing_.HandlePairConfirm(request);
+    }
+    if (request.verb == HttpVerbGET && request.path == StatePath)
+    {
+        return state_.Handle(request);
     }
     return api_errors::Error(api_errors::NotFound, "NOT_FOUND");
 }
