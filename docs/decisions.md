@@ -66,3 +66,9 @@ L'application affiche l'état du PC tant qu'elle est ouverte : verrouillé, sess
 **Décision** : les tests du service utilisent un exécuteur de 50 lignes (`tests/test_runner.*`) intégré à CTest, plutôt qu'un framework.
 
 **Raison** : aucune dépendance supplémentaire, suffisant pour des tests unitaires. À revoir si les besoins dépassent `TEST` et `CHECK`.
+
+## D9 : session d'association de 5 minutes (14/10/2026)
+
+**Décision** : le jeton du QR d'association reste valable 5 minutes au lieu de 120 secondes.
+
+**Raison** : en 2 minutes, il fallait scanner, comparer le code, répondre sur le PC puis poser le doigt ; c'était trop court en pratique. Le risque ajouté est faible : le jeton n'est visible que sur l'écran du PC, il est à usage unique, limité à 3 essais, et l'association exige toujours la comparaison du code à 6 chiffres, la confirmation sur le PC et l'empreinte.

@@ -9,7 +9,6 @@ using test_support::GeneratedKey;
 const std::wstring AccountSid = L"S-1-5-21-1-2-3-1001";
 constexpr char QrPrefix[] = "phoneunlock:1:";
 constexpr uint64_t QrTokenField = 4;
-constexpr ULONGLONG SessionLifetime = 120'000;
 constexpr int MaxAttempts = 3;
 
 enum Status : USHORT
@@ -226,7 +225,7 @@ TEST(SessionExpiresAfterTwoMinutes)
 {
     PairingFixture fixture;
     fixture.Start();
-    fixture.Clock().Advance(SessionLifetime);
+    fixture.Clock().Advance(pairing_protocol::SessionLifetimeMilliseconds);
     CHECK(fixture.SendPairRequest().status == Gone);
     CHECK(fixture.Manager().Status().stage == PairingStage::Failed);
 }

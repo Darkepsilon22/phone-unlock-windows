@@ -36,7 +36,7 @@ Règles :
 
 ### 3.1 QR code
 
-Le PC affiche pendant **120 secondes** un QR contenant la chaîne `phoneunlock:1:` suivie du CBOR suivant encodé en base64url sans remplissage.
+Le PC affiche pendant **5 minutes** un QR contenant la chaîne `phoneunlock:1:` suivie du CBOR suivant encodé en base64url sans remplissage.
 
 ```cddl
 qr-pairing = {
@@ -101,7 +101,7 @@ pair-tbs = "PhoneUnlock-v1-pair-confirm" ‖ 0x00 ‖ transcript
 
 ### 3.4 Règles
 
-- Jeton valable 120 s, usage unique, **3 essais** maximum puis invalidation.
+- Jeton valable 5 minutes (décision D9), usage unique, **3 essais** maximum puis invalidation.
 - Une association lie : `pairing_id`, `fp(transport)`, clé d'autorisation, `pc_id`, **SID du compte** choisi dans l'assistant.
 - Une empreinte inconnue ou différente **NE DOIT JAMAIS** remplacer silencieusement une association existante. Changer de téléphone impose une nouvelle association.
 

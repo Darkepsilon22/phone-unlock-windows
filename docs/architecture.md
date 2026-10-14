@@ -61,7 +61,7 @@ Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à t
 
 ### Association (implémentée côté PC, non validée en VM)
 
-1. `PhoneUnlockService pair` demande au service une session : jeton aléatoire de 256 bits, valable 120 s. Le QR contient l'identité du PC et les adresses.
+1. `PhoneUnlockService pair` demande au service une session : jeton aléatoire de 256 bits, valable 5 minutes. Le QR contient l'identité du PC et les adresses.
 2. Le téléphone appelle `POST /v1/pair` avec son certificat de transport et sa clé d'autorisation. Le service répond avec `pairing_id`, puis les deux côtés calculent le même code à 6 chiffres.
 3. L'utilisatrice confirme sur le PC, puis sur le téléphone avec une signature biométrique (`POST /v1/pair/confirm`). Le service vérifie la signature et enregistre l'association.
 
@@ -77,7 +77,7 @@ Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à t
 
 ## Choix techniques
 
-Les choix et leurs raisons sont dans [decisions.md](decisions.md) : D4 `http.sys`, D5 TLS 1.3, D6 format de sérialisation, D7 commande de test, D8 exécuteur de tests.
+Les choix et leurs raisons sont dans [decisions.md](decisions.md) : D4 `http.sys`, D5 TLS 1.3, D6 format de sérialisation, D7 commande de test, D8 exécuteur de tests, D9 durée de la session d'association.
 
 ## Conventions
 

@@ -13,7 +13,6 @@ using api_errors::Gone;
 
 namespace
 {
-constexpr ULONGLONG SessionLifetime = 120'000;
 constexpr int MaxAttempts = 3;
 constexpr size_t MaxNameCharacters = 64;
 constexpr char PairedState[] = "paired";
@@ -98,7 +97,7 @@ std::optional<std::string> PairingManager::Start(const std::wstring& accountSid,
     session_ = Session{};
     session_.accountSid = accountSid;
     session_.token = *token;
-    session_.expiresAt = clock_() + SessionLifetime;
+    session_.expiresAt = clock_() + pairing_protocol::SessionLifetimeMilliseconds;
     session_.attemptsLeft = MaxAttempts;
     session_.stage = PairingStage::WaitingForPhone;
     LogLine(L"pairing started");

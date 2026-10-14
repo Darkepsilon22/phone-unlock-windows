@@ -17,7 +17,8 @@ using pipe_protocol::PayloadWriter;
 namespace
 {
 constexpr DWORD StatusPollInterval = 1000;
-constexpr ULONGLONG PairingTimeout = 130'000;
+constexpr ULONGLONG PairingTimeout = pairing_protocol::SessionLifetimeMilliseconds + 10'000;
+constexpr ULONGLONG MillisecondsPerMinute = 60'000;
 constexpr wchar_t EndpointOption[] = L"--endpoint";
 
 std::vector<std::wstring> RequestedEndpoints(int argc, wchar_t** argv)
@@ -80,7 +81,8 @@ void ConfirmOnPc(bool accepted)
 
 void ShowInstructions(const std::wstring& qr, const std::vector<std::wstring>& endpoints)
 {
-    fwprintf(stdout, L"Scanne ce code avec l'application PhoneUnlock (valable 120 s) :\n\n");
+    fwprintf(stdout, L"Scanne ce code avec l'application PhoneUnlock (valable %llu min) :\n\n",
+        pairing_protocol::SessionLifetimeMilliseconds / MillisecondsPerMinute);
     PrintQrCode(Utf8FromWide(qr));
     fwprintf(stdout, L"\nAdresses annoncées :");
     for (const std::wstring& endpoint : endpoints)

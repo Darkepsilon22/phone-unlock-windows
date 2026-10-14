@@ -13,6 +13,7 @@ constexpr uint64_t ProtocolVersion = 1;
 constexpr size_t TokenSize = 32;
 constexpr size_t PairingIdSize = 16;
 constexpr uint16_t DefaultPort = 47863;
+constexpr uint64_t SessionLifetimeMilliseconds = 300'000;
 
 struct Endpoint
 {
