@@ -29,6 +29,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Mêmes cas sans réseau | Rapport L1, complément | 13/10/2026 |
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
+| Révocation : `phones`, `revoke` ; téléphone refusé aussitôt (« n'est plus associé »), tuile « Aucun téléphone associé » ; nouvelle association du même téléphone, une seule entrée dans `phones`, déverrouillage de nouveau possible | Messages attendus, session ouverte après réassociation | 14/10/2026 |
 | Mode tuile : « Demander au téléphone », même code à 4 chiffres sur la tuile et le téléphone, autorisation par empreinte ; refus sur le téléphone (rien ne s'ouvre) ; expiration après 60 s (la tuile revient à l'état initial) | Session ouverte ; aucune ouverture en cas de refus ou d'expiration | 14/10/2026 |
 | Déverrouillage sans aucune connexion : point d'accès du Pixel 5, données mobiles coupées, PC hôte et VM sur ce point d'accès | L'application retrouve la VM sur le réseau du point d'accès (adresse 10.166.107.177 ajoutée à `pairing.cbor`), état « Verrouillé » puis session ouverte | 14/10/2026 |
 | Déverrouillage depuis l'application : écran de verrouillage et écran de connexion après redémarrage ; empreinte annulée, 4ᵉ demande en une minute, plus de 30 s avant l'empreinte | Session ouverte (`history unlock result … status=0x00000000`), puis messages « Empreinte non confirmée », « Trop de demandes », « Demande expirée » sans ouverture | 14/10/2026 |
@@ -45,7 +46,6 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 ### Procédures à exécuter
 
-**Révocation (VM et Pixel 5)** : `PhoneUnlockService.exe phones` liste le téléphone ; `revoke`, choisir le numéro, confirmer ; l'application affiche « Ce téléphone n'est plus associé à ce PC » ; la tuile répond « Aucun téléphone associé » ; nouvelle association, puis déverrouillage de nouveau possible.
 
 **Mode tuile (VM et Pixel 5)** : verrouiller la VM, choisir la tuile Téléphone, cliquer « Demander au téléphone » ; la tuile affiche « Code NNNN » ; ouvrir PhoneUnlock, vérifier que le même code s'affiche, autoriser avec l'empreinte ; la session s'ouvre. Reste à vérifier : quatre demandes en une minute (« Trop de demandes » sur la tuile).
 
