@@ -10,6 +10,7 @@ constexpr USHORT Forbidden = 403;
 constexpr USHORT NotFound = 404;
 constexpr USHORT Conflict = 409;
 constexpr USHORT Gone = 410;
+constexpr USHORT RateLimited = 429;
 
 HttpResponse Error(USHORT status, const char* code);
 

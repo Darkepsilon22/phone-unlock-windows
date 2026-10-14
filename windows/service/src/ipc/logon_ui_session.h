@@ -4,11 +4,14 @@
 #include "pipe_protocol.h"
 #include "storage/secret_store.h"
 #include <windows.h>
+#include <functional>
 
 class LogonUiSession
 {
 public:
-    LogonUiSession(const SecretStore& secrets, LogonTiles& tiles);
+    using ResultHandler = std::function<void(const std::wstring& sid, LONG status)>;
+
+    LogonUiSession(const SecretStore& secrets, LogonTiles& tiles, ResultHandler onResult);
 
     void Serve(HANDLE pipe, pipe_protocol::Message first, HANDLE stopEvent);
 
@@ -18,4 +21,5 @@ private:
 
     const SecretStore& secrets_;
     LogonTiles& tiles_;
+    ResultHandler onResult_;
 };

@@ -6,6 +6,8 @@
 #include "network/api.h"
 #include "network/http_server.h"
 #include "network/state_endpoint.h"
+#include "network/unlock_endpoint.h"
+#include "session/account_name.h"
 #include "session/session_monitor.h"
 #include "pipe_io.h"
 #include <atomic>
@@ -30,6 +32,7 @@ constexpr wchar_t PairingsDirectory[] = L"%ProgramData%\\PhoneUnlock\\state\\pai
 constexpr wchar_t HttpsPrefix[] = L"https://+:47863/v1/";
 constexpr DWORD StopWaitHint = 5000;
 constexpr auto StateLongPoll = std::chrono::seconds(25);
+constexpr auto ResultLongPoll = std::chrono::seconds(10);
 
 SERVICE_STATUS_HANDLE statusHandle = nullptr;
 SERVICE_STATUS status = {};
@@ -114,13 +117,17 @@ void RunService(HANDLE stop)
 
     std::optional<PairingManager> pairing;
     std::string pcName;
+    cbor::Bytes pcId;
     if (std::optional<PcIdentity> identity = LoadPcIdentity(Expand(StateDirectory)))
     {
         pcName = identity->name;
+        pcId = identity->pcId;
         pairing.emplace(std::move(*identity), pairings);
     }
 
-    LogonUiSession logonUiSession(secrets, tiles);
+    UnlockRequests unlockRequests(tiles, pcId, pcName, AccountDisplayName);
+    LogonUiSession logonUiSession(secrets, tiles,
+        [&unlockRequests](const std::wstring& sid, LONG logonStatus) { unlockRequests.ReportLogonResult(sid, logonStatus); });
     AdminRequests adminRequests(secrets, tiles, pairing ? &*pairing : nullptr);
     PipeServer logonUiServer(PipeRole::LogonUi, [&logonUiSession](HANDLE pipe, Message first, HANDLE connectionStop) {
         logonUiSession.Serve(pipe, std::move(first), connectionStop);
@@ -136,11 +143,12 @@ void RunService(HANDLE stop)
     StateEndpoint state(pairings, changes,
         [&tiles, &sessions](const std::wstring& sid) { return DescribeAccount(tiles.Find(sid), sessions.Snapshot(), sid); },
         pcName, StateLongPoll);
+    UnlockEndpoint unlock(pairings, unlockRequests, ResultLongPoll);
     std::optional<Api> api;
     std::optional<HttpServer> https;
     if (pairing)
     {
-        api.emplace(*pairing, state);
+        api.emplace(*pairing, state, unlock);
         https.emplace(HttpsPrefix, [&api](const HttpRequest& request) { return api->Handle(request); });
         servers.emplace_back([&https, stop] { https->Run(stop); });
     }

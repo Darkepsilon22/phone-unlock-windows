@@ -174,6 +174,8 @@ authorization-proof = {
 }
 ```
 
+Réponse : `authorization-result` (§4.6) avec l'état `consumed`, ou une erreur du §6.
+
 Le téléphone n'envoie **que** l'identifiant et la signature. Le PC reconstruit `authorization` à partir de sa propre copie de la demande ; il ne réutilise jamais un encodage fourni par le téléphone.
 
 ### 4.5 Validation par le PC
@@ -285,7 +287,7 @@ Toute réponse d'erreur porte un corps `{ 1: error-code }`.
 | Bluetooth Low Energy | Lot ultérieur : mêmes messages CBOR, canal à spécifier |
 
 L'ouverture d'un compte Microsoft sans Internet repose sur les identifiants en cache de Windows : à vérifier en VM avant d'annoncer ce mode.
-- Pendant les tests en VM (NAT VirtualBox), une redirection `hôte:47863 → VM:47863` est ajoutée ; elle est retirée après les tests.
+- Pendant les tests, la VM est en accès par pont sur le Wi-Fi de l'hôte. Le mode NAT de VirtualBox conserve l'adresse d'origine des connexions redirigées, que la règle « réseau local » de la VM rejette.
 
 ## 9. Sécurité : correspondance avec le cahier
 

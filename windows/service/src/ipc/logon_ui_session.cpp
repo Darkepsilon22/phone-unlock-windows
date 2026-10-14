@@ -25,21 +25,29 @@ bool IsSignaled(HANDLE event)
     return WaitForSingleObject(event, 0) == WAIT_OBJECT_0;
 }
 
-void LogResult(const Message& message)
+struct LogonResult
 {
-    PayloadReader reader(message.payload);
     std::wstring sid;
     int32_t status = 0;
+};
+
+std::optional<LogonResult> ReadResult(const Message& message)
+{
+    PayloadReader reader(message.payload);
+    LogonResult result;
     int32_t subStatus = 0;
-    if (reader.ReadString(&sid) && reader.ReadInt32(&status) && reader.ReadInt32(&subStatus))
+    if (!reader.ReadString(&result.sid) || !reader.ReadInt32(&result.status) || !reader.ReadInt32(&subStatus))
     {
-        LogLine(L"logon result status=0x%08X substatus=0x%08X", static_cast<unsigned>(status),
-            static_cast<unsigned>(subStatus));
+        return std::nullopt;
     }
+    LogLine(L"logon result status=0x%08X substatus=0x%08X", static_cast<unsigned>(result.status),
+        static_cast<unsigned>(subStatus));
+    return result;
 }
 }
 
-LogonUiSession::LogonUiSession(const SecretStore& secrets, LogonTiles& tiles) : secrets_(secrets), tiles_(tiles)
+LogonUiSession::LogonUiSession(const SecretStore& secrets, LogonTiles& tiles, ResultHandler onResult)
+    : secrets_(secrets), tiles_(tiles), onResult_(std::move(onResult))
 {
 }
 
@@ -50,7 +58,10 @@ void LogonUiSession::Serve(HANDLE pipe, Message message, HANDLE stopEvent)
     {
         if (message.type == MessageType::Result)
         {
-            LogResult(message);
+            if (const std::optional<LogonResult> result = ReadResult(message))
+            {
+                onResult_(result->sid, result->status);
+            }
         }
         else if (message.type == MessageType::Wait)
         {

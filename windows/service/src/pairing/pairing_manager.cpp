@@ -2,7 +2,7 @@
 #include "network/api_errors.h"
 #include "log.h"
 #include "encoding/text.h"
-#include <sddl.h>
+#include "session/account_name.h"
 #include <algorithm>
 #include <ctime>
 
@@ -42,23 +42,6 @@ enum PairResultField : uint64_t
 {
     StateField = 1,
 };
-
-std::string AccountDisplayName(const std::wstring& sid)
-{
-    PSID binary = nullptr;
-    if (!ConvertStringSidToSidW(sid.c_str(), &binary))
-    {
-        return "compte";
-    }
-    wchar_t name[256] = {};
-    wchar_t domain[256] = {};
-    DWORD nameSize = 256;
-    DWORD domainSize = 256;
-    SID_NAME_USE use = SidTypeUnknown;
-    const BOOL found = LookupAccountSidW(nullptr, binary, name, &nameSize, domain, &domainSize, &use);
-    LocalFree(binary);
-    return found ? SanitizedDisplayName(Utf8FromWide(name), MaxNameCharacters) : "compte";
-}
 
 bool HasOnlyKeys(const cbor::Map& map, std::initializer_list<uint64_t> allowed)
 {

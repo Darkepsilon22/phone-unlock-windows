@@ -23,9 +23,11 @@ add_library(PhoneUnlockServiceCore STATIC
     src/network/api_errors.cpp
     src/network/http_server.cpp
     src/network/state_endpoint.cpp
+    src/network/unlock_endpoint.cpp
     src/pairing/pairing_manager.cpp
     src/pairing/pairing_protocol.cpp
     src/pairing/pc_identity.cpp
+    src/session/account_name.cpp
     src/session/pc_state.cpp
     src/session/session_monitor.cpp
     src/storage/file_io.cpp
@@ -33,6 +35,8 @@ add_library(PhoneUnlockServiceCore STATIC
     src/storage/secret_store.cpp
     src/support/change_feed.cpp
     src/support/worker_group.cpp
+    src/unlock/unlock_protocol.cpp
+    src/unlock/unlock_requests.cpp
 )
 
 target_include_directories(PhoneUnlockServiceCore PUBLIC src)
@@ -60,6 +64,8 @@ add_executable(PhoneUnlockServiceTests
     tests/pc_state_tests.cpp
     tests/state_endpoint_tests.cpp
     tests/test_runner.cpp
+    tests/unlock_protocol_tests.cpp
+    tests/unlock_requests_tests.cpp
     tests/test_support.cpp
 )
 target_link_libraries(PhoneUnlockServiceTests PRIVATE PhoneUnlockServiceCore)
