@@ -39,6 +39,8 @@ L'application affiche l'état du PC tant qu'elle est ouverte : verrouillé, sess
 
 **Écart réseau** : l'adresse du téléphone change selon le réseau (box ou point d'accès). La règle de pare-feu est donc limitée au port 47863/TCP et au sous-réseau local, au lieu de la seule adresse du téléphone ; elle ne peut pas viser le processus du service car `http.sys` s'exécute dans le noyau. Le TLS mutuel épinglé reste obligatoire.
 
+**Vérifié le 14/10/2026** : déverrouillage depuis le téléphone par son point d'accès, données mobiles coupées ; l'application retrouve le PC sur ce réseau sans nouvelle association.
+
 **Vérifié dans la VM le 13/10/2026** : ouverture et déverrouillage du compte Microsoft sans réseau avec `KERB_INTERACTIVE_UNLOCK_LOGON` (voir D6), à condition que Windows ait déjà mis le mot de passe en cache lors d'une connexion en ligne par mot de passe.
 
 ## D4 : serveur HTTPS de Windows (13/10/2026)

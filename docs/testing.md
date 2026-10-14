@@ -29,6 +29,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Mêmes cas sans réseau | Rapport L1, complément | 13/10/2026 |
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
+| Déverrouillage sans aucune connexion : point d'accès du Pixel 5, données mobiles coupées, PC hôte et VM sur ce point d'accès | L'application retrouve la VM sur le réseau du point d'accès (adresse 10.166.107.177 ajoutée à `pairing.cbor`), état « Verrouillé » puis session ouverte | 14/10/2026 |
 | Déverrouillage depuis l'application : écran de verrouillage et écran de connexion après redémarrage ; empreinte annulée, 4ᵉ demande en une minute, plus de 30 s avant l'empreinte | Session ouverte (`history unlock result … status=0x00000000`), puis messages « Empreinte non confirmée », « Trop de demandes », « Demande expirée » sans ouverture | 14/10/2026 |
 | Vérification du mot de passe par `provision` : mauvais refusé, bon accepté, en ligne et VM débranchée | « Mot de passe refusé par Windows », puis `OK` | 14/10/2026 |
 | Association de bout en bout avec le Pixel 5 (code identique des deux côtés, confirmation sur le PC puis par empreinte) | Console « Association enregistrée », `pairing.cbor` créé sur le téléphone | 14/10/2026 |
@@ -43,7 +44,9 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 ### Procédures à exécuter
 
-**Déverrouillage sans connexion** (à faire) : même Wi-Fi sans accès Internet ; point d'accès du téléphone avec données mobiles coupées (le PC doit s'y connecter dès l'écran de verrouillage, l'application doit le retrouver sur le réseau du point d'accès).
+**Wi-Fi sans Internet, données mobiles du téléphone actives** (à faire) : Android peut alors faire passer les connexions par les données mobiles ; vérifier que l'application joint toujours le PC sur le Wi-Fi.
+
+**PC réel sur le point d'accès dès l'écran de verrouillage** (à faire sur le PC principal, lot L6) : le réseau du point d'accès doit être connu pour tous les utilisateurs.
 
 **Association avec le téléphone (VM et Pixel 5)**
 1. Téléphone sur le même Wi-Fi que la VM. Installer l'application : `android\gradlew.bat installDebug`.
