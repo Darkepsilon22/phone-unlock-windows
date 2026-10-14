@@ -38,7 +38,7 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 | S08 saturation | Fait | 16 Ko, 8 requêtes simultanées, 3 essais d'association, 3 demandes de déverrouillage par minute et par compte (VM) |
 | S09 mise à jour malveillante | À faire | Signature des paquets (lot L5) |
 | S10 nouvelle biométrie | Fait | Clé invalidée à l'enrôlement (Android) |
-| S11 blocage du PC | Partiel | Fournisseurs Windows conservés et tuile sans appel bloquant (constaté en VM) ; désinstallation et plantage du service pas encore testés |
+| S11 blocage du PC | Fait | Fournisseurs Windows conservés, tuile sans appel bloquant ; service arrêté brutalement : écran de verrouillage normal, « Service PhoneUnlock injoignable », PIN fonctionnel ; désinstallation complète sans trace, PIN fonctionnel après redémarrage (VM, 14/10/2026) |
 | S12 mauvaise demande | Partiel | Mode téléphone : tuile du compte affichée exigée, noms du PC et du compte signés et montrés avant l'empreinte, historique dans `service.log` (lignes `history`). Mode tuile (code à 4 chiffres) : lot 2b-2 |
 
 ## Conditions et limites connues
