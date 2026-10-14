@@ -30,6 +30,13 @@ TEST(LogonTileMeansLogonScreenAndUnlockable)
     CHECK(view.unlockAvailable);
 }
 
+TEST(LogonTileOverALockedSessionMeansLocked)
+{
+    const AccountView view = DescribeAccount(Tile(TileScenario::Logon), Known(false, true));
+    CHECK(view.state == SessionState::Locked);
+    CHECK(view.unlockAvailable);
+}
+
 TEST(OpenSessionWithoutTileIsSignedIn)
 {
     const AccountView view = DescribeAccount(std::nullopt, Known(true, false));

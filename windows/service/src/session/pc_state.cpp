@@ -4,7 +4,8 @@ AccountView DescribeAccount(const std::optional<TileView>& tile, const SessionSu
 {
     if (tile)
     {
-        return { tile->scenario == TileScenario::Unlock ? SessionState::Locked : SessionState::LogonScreen, true };
+        const bool locked = tile->scenario == TileScenario::Unlock || sessions.anyLocked;
+        return { locked ? SessionState::Locked : SessionState::LogonScreen, true };
     }
     if (!sessions.known)
     {
