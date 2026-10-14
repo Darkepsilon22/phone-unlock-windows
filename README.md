@@ -62,4 +62,4 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 
 ## Limitations connues
 
-Hello uniquement doit être désactivé. Le mot de passe du compte est conservé chiffré sur le PC. Le mot de passe n'est pas encore vérifié lors de l'enregistrement. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md).
+Hello uniquement doit être désactivé. Le mot de passe du compte est conservé chiffré sur le PC. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md).

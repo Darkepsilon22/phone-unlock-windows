@@ -29,6 +29,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Mêmes cas sans réseau | Rapport L1, complément | 13/10/2026 |
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
+| Vérification du mot de passe par `provision` : mauvais refusé, bon accepté, en ligne et VM débranchée | « Mot de passe refusé par Windows », puis `OK` | 14/10/2026 |
 | Association de bout en bout avec le Pixel 5 (code identique des deux côtés, confirmation sur le PC puis par empreinte) | Console « Association enregistrée », `pairing.cbor` créé sur le téléphone | 14/10/2026 |
 | Cas d'échec de l'association : téléphone avant le PC, refus sur le PC, empreinte annulée, QR expiré, QR étranger | Messages attendus sur le téléphone et la console, aucune association enregistrée | 14/10/2026 |
 | Serveur HTTPS, TLS 1.3, QR code d'association | `https server listening`, `400` CBOR `INVALID_PROOF`, `https POST /v1/pair certificate=0` | 13/10/2026 |

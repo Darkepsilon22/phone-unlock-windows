@@ -1,4 +1,5 @@
 #include "admin/admin_commands.h"
+#include "admin/account_password.h"
 #include "admin/console.h"
 #include "admin/current_user.h"
 #include "admin/pair_command.h"
@@ -20,11 +21,30 @@ int Provision()
     {
         return exit_code::Failure;
     }
-    fwprintf(stdout, L"Compte %s\nMot de passe du compte (il ne s'affiche pas) : ", sid->c_str());
+    const std::optional<LogonName> name = LogonNameFor(*sid);
+    if (!name)
+    {
+        fwprintf(stderr, L"Nom de connexion du compte introuvable.\n");
+        return exit_code::Failure;
+    }
+    fwprintf(stdout, L"Compte %s\\%s\nMot de passe du compte (il ne s'affiche pas) : ", name->domain.c_str(),
+        name->user.c_str());
     const std::optional<SecureString> password = ReadHiddenLine();
     if (!password)
     {
         fwprintf(stderr, L"Mot de passe vide ou trop long.\n");
+        return exit_code::Failure;
+    }
+
+    const DWORD verification = VerifyAccountPassword(*name, *password);
+    if (verification == ERROR_LOGON_FAILURE)
+    {
+        fwprintf(stderr, L"Mot de passe refusé par Windows : rien n'a été enregistré.\n");
+        return exit_code::Failure;
+    }
+    if (verification != NO_ERROR)
+    {
+        fwprintf(stderr, L"Vérification impossible (erreur %lu) : rien n'a été enregistré.\n", verification);
         return exit_code::Failure;
     }
 

@@ -45,7 +45,7 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 
 - **Hello uniquement** doit être désactivé sur le PC, sinon Windows refuse la connexion par mot de passe (`0xC000015B`, rapport L1).
 - Le mot de passe doit avoir servi **une fois en ligne** sur le PC pour que l'ouverture hors ligne fonctionne.
-- **Mot de passe non vérifié à l'enregistrement** (`provision`) : à corriger avant usage réel. Pour l'instant, une erreur n'apparaît qu'à la première connexion.
+- `provision` fait vérifier le mot de passe par Windows (`LogonUserW`, identité `MicrosoftAccountdresse` lue par `NetUserGetInfo` niveau 24) avant de l'enregistrer, en ligne comme hors ligne. Chaque mot de passe erroné compte comme une tentative ratée pour Windows.
 - **Pixel 5** : plus de correctifs de sécurité depuis novembre 2023.
 - Le même Wi-Fi ne prouve pas la proximité. Un déverrouillage depuis le téléphone ouvre la session pour la personne devant le PC (D1).
 - BitLocker n'a pas été testé avec le produit : il a été désactivé dans la VM à cause des instantanés VirtualBox.
