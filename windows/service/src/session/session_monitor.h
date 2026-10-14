@@ -2,19 +2,21 @@
 
 #include "session/pc_state.h"
 #include "support/change_feed.h"
+#include <windows.h>
+#include <map>
 #include <mutex>
-#include <optional>
 
 class SessionMonitor
 {
 public:
     explicit SessionMonitor(ChangeFeed& changes);
 
-    void Refresh();
-    std::optional<SessionLocks> Snapshot();
+    void OnSessionEvent(DWORD eventType, DWORD sessionId);
+    SessionSummary Summary();
 
 private:
     ChangeFeed& changes_;
     std::mutex mutex_;
-    std::optional<SessionLocks> sessions_;
+    bool known_ = false;
+    std::map<DWORD, bool> lockedBySession_;
 };

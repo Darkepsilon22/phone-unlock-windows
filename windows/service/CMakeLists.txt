@@ -47,7 +47,7 @@ target_compile_definitions(PhoneUnlockServiceCore PUBLIC
 target_link_libraries(PhoneUnlockServiceCore PUBLIC
     PhoneUnlockShared
     unofficial::nayuki-qr-code-generator::nayuki-qr-code-generator
-    advapi32 bcrypt crypt32 httpapi iphlpapi netapi32 ws2_32 secur32 wtsapi32
+    advapi32 bcrypt crypt32 httpapi iphlpapi netapi32 ws2_32 secur32
 )
 
 add_executable(PhoneUnlockService src/host/main.cpp)

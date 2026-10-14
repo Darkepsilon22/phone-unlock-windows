@@ -1,9 +1,7 @@
 #pragma once
 
 #include "ipc/logon_tiles.h"
-#include <map>
 #include <optional>
-#include <string>
 
 enum class SessionState
 {
@@ -19,9 +17,13 @@ struct AccountView
     bool unlockAvailable = false;
 };
 
-using SessionLocks = std::map<std::wstring, bool>;
+struct SessionSummary
+{
+    bool known = false;
+    bool anyUnlocked = false;
+    bool anyLocked = false;
+};
 
-AccountView DescribeAccount(const std::optional<TileView>& tile, const std::optional<SessionLocks>& sessions,
-    const std::wstring& sid);
+AccountView DescribeAccount(const std::optional<TileView>& tile, const SessionSummary& sessions);
 
 const char* SessionStateText(SessionState state);

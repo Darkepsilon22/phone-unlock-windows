@@ -66,7 +66,7 @@ private fun statusLabel(state: UnlockUiState): String = when {
         SessionState.LOCKED -> if (state.status.unlockAvailable) "Verrouillé" else "Verrouillé (écran en veille ?)"
         SessionState.LOGON_SCREEN -> if (state.status.unlockAvailable) "Écran de connexion" else "Démarrage en cours"
         SessionState.SIGNED_IN -> "Session ouverte"
-        else -> "État inconnu"
+        else -> "État inconnu : verrouille le PC une fois"
     }
     state.searching -> "Recherche du PC…"
     else -> "PC injoignable"

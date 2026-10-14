@@ -1,22 +1,20 @@
 #include "session/pc_state.h"
 
-AccountView DescribeAccount(const std::optional<TileView>& tile, const std::optional<SessionLocks>& sessions,
-    const std::wstring& sid)
+AccountView DescribeAccount(const std::optional<TileView>& tile, const SessionSummary& sessions)
 {
     if (tile)
     {
         return { tile->scenario == TileScenario::Unlock ? SessionState::Locked : SessionState::LogonScreen, true };
     }
-    if (!sessions)
+    if (!sessions.known)
     {
         return { SessionState::Unknown, false };
     }
-    const auto session = sessions->find(sid);
-    if (session == sessions->end())
+    if (sessions.anyUnlocked)
     {
-        return { SessionState::LogonScreen, false };
+        return { SessionState::SignedIn, false };
     }
-    return { session->second ? SessionState::Locked : SessionState::SignedIn, false };
+    return { sessions.anyLocked ? SessionState::Locked : SessionState::LogonScreen, false };
 }
 
 const char* SessionStateText(SessionState state)

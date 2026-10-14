@@ -56,7 +56,7 @@ void ReportStatus(DWORD state, DWORD exitCode = NO_ERROR)
     SetServiceStatus(statusHandle, &status);
 }
 
-DWORD WINAPI ControlHandler(DWORD control, DWORD, void*, void*)
+DWORD WINAPI ControlHandler(DWORD control, DWORD eventType, void* eventData, void*)
 {
     if (control == SERVICE_CONTROL_STOP || control == SERVICE_CONTROL_SHUTDOWN)
     {
@@ -66,9 +66,10 @@ DWORD WINAPI ControlHandler(DWORD control, DWORD, void*, void*)
     }
     if (control == SERVICE_CONTROL_SESSIONCHANGE)
     {
-        if (SessionMonitor* monitor = sessionMonitor.load())
+        SessionMonitor* monitor = sessionMonitor.load();
+        if (monitor && eventData)
         {
-            monitor->Refresh();
+            monitor->OnSessionEvent(eventType, static_cast<const WTSSESSION_NOTIFICATION*>(eventData)->dwSessionId);
         }
         return NO_ERROR;
     }
@@ -111,7 +112,6 @@ void RunService(HANDLE stop)
     ChangeFeed changes;
     LogonTiles tiles(changes);
     SessionMonitor sessions(changes);
-    sessions.Refresh();
     sessionMonitor = &sessions;
     PairingStore pairings(Expand(PairingsDirectory));
 
@@ -141,7 +141,7 @@ void RunService(HANDLE stop)
     servers.emplace_back([&adminServer, stop] { adminServer.Run(stop); });
 
     StateEndpoint state(pairings, changes,
-        [&tiles, &sessions](const std::wstring& sid) { return DescribeAccount(tiles.Find(sid), sessions.Snapshot(), sid); },
+        [&tiles, &sessions](const std::wstring& sid) { return DescribeAccount(tiles.Find(sid), sessions.Summary()); },
         pcName, StateLongPoll);
     UnlockEndpoint unlock(pairings, unlockRequests, ResultLongPoll);
     std::optional<Api> api;
