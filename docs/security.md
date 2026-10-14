@@ -24,6 +24,8 @@ Le téléphone n'accepte que le PC dont l'empreinte figure dans le QR code : son
 
 Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 
+La clé de signature de l'APK (`%USERPROFILE%\.phoneunlock\release.jks`, PKCS12, RSA 4096) reste hors du dépôt ; son mot de passe est tapé à chaque signature. Une autre clé empêche toute mise à jour de l'application installée : il faut alors la désinstaller, ce qui efface ses clés, révoquer le téléphone sur le PC puis l'associer à nouveau.
+
 ## Menaces du cahier des charges
 
 | Menace | État | Mesures |
@@ -36,7 +38,7 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 | S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret |
 | S07 détournement de l'IPC | Fait | Deux canaux à ACL distinctes, vérification du serveur par la tuile, échec fermé si le descripteur de sécurité ne peut pas être construit |
 | S08 saturation | Fait | 16 Ko, 8 requêtes simultanées, 3 essais d'association, 3 demandes de déverrouillage par minute et par compte (VM) |
-| S09 mise à jour malveillante | Partiel | Empreintes SHA-256 vérifiées par l'installeur avant et après copie, fichiers modifiables seulement par les administrateurs (droits contrôlés), compilation de test refusée hors VM, annulation complète en cas d'échec (D11, VM) ; APK signé : lot L5-2 |
+| S09 mise à jour malveillante | Fait | Empreintes SHA-256 vérifiées par l'installeur avant et après copie, fichiers modifiables seulement par les administrateurs (droits contrôlés), compilation de test refusée hors VM, annulation complète en cas d'échec ; APK release signé (schéma v3) avec une clé locale hors dépôt, non débogable (D11, VM et Pixel 5) |
 | S10 nouvelle biométrie | Fait | Clé invalidée à l'enrôlement (Android) |
 | S11 blocage du PC | Fait | Fournisseurs Windows conservés, tuile sans appel bloquant ; service arrêté brutalement : écran de verrouillage normal, « Service PhoneUnlock injoignable », PIN fonctionnel ; désinstallation complète sans trace, PIN fonctionnel après redémarrage (VM, 14/10/2026) |
 | S12 mauvaise demande | Partiel | Mode téléphone : tuile du compte affichée exigée, noms du PC et du compte signés et montrés avant l'empreinte, historique dans `service.log` (lignes `history`). Mode tuile (code à 4 chiffres) : lot 2b-2 |

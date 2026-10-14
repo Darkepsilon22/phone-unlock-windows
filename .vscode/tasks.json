@@ -35,11 +35,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Android : installer sur le téléphone",
+      "label": "Android : compiler et signer l'APK",
       "type": "process",
-      "command": "${workspaceFolder}/android/gradlew.bat",
-      "args": ["installDebug", "--console=plain"],
-      "options": { "cwd": "${workspaceFolder}/android" },
+      "command": "powershell",
+      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/sign-apk.ps1"],
       "problemMatcher": []
     },
     {

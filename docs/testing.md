@@ -30,6 +30,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
 | Plantage du service (`Stop-Process -Force`) puis désinstallation complète et redémarrage | Écran de verrouillage normal, tuile « Service PhoneUnlock injoignable », PIN fonctionnel ; après désinstallation : service, tuile, DLL, liaison TLS, pare-feu et certificat absents, PIN fonctionnel | 14/10/2026 |
+| APK release signé : `revoke` sur le PC, désinstallation de la version debug, installation de `PhoneUnlock-0.1.0.apk`, nouvelle association, déverrouillage | `apksigner verify` : schéma v3, signataire `CN=PhoneUnlock` ; `run-as` refusé (« package not debuggable ») ; une seule entrée dans `phones` ; session ouverte depuis l'application et depuis la tuile (`status=0x00000000`) | 14/10/2026 |
 | Installeur : mise à jour de l'installation existante (`install.ps1`) | « Certificat du PC conservé », « Liaison TLS conservée. », Pixel 5 toujours dans `phones` ; session ouverte depuis l'application et depuis la tuile sans nouvelle association (`status=0x00000000`) | 14/10/2026 |
 | Désinstallation (`uninstall.ps1`) puis redémarrage | Service, fichiers, clés de registre, certificat, pare-feu, liaison TLS et réservation d'URL absents ; seul `logs` reste ; PIN fonctionnel | 14/10/2026 |
 | Installation en échec : port 47863 occupé par un autre programme | « Le service ne répond pas sur le port 47863 », annulation ; mêmes contrôles qu'après désinstallation ; `https server setup failed error=32` | 14/10/2026 |
@@ -61,7 +62,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 **PC réel sur le point d'accès dès l'écran de verrouillage** (à faire sur le PC principal, lot L6) : le réseau du point d'accès doit être connu pour tous les utilisateurs.
 
 **Association avec le téléphone (VM et Pixel 5)**
-1. Téléphone sur le même Wi-Fi que la VM. Installer l'application : `android\gradlew.bat installDebug`.
+1. Téléphone sur le même Wi-Fi que la VM. Installer l'application signée : `scripts\sign-apk.ps1` puis `adb install -r build\package\PhoneUnlock-<version>.apk`.
 2. Dans la VM, en administrateur : `PhoneUnlockService.exe pair --endpoint <IP de la VM>:47863`.
 3. Dans l'application : « Associer un PC », autoriser la caméra, scanner le QR.
 4. Le téléphone et la console affichent le même code à 6 chiffres. Répondre `o` sur le PC, puis « Le code est identique : confirmer » et poser le doigt.
