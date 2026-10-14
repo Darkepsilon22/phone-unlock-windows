@@ -14,7 +14,7 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 | [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
 | [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
 | [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
-| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D11) |
+| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D12) |
 | [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
 | [docs/third-party.md](docs/third-party.md) | Composants tiers et licences |
 
@@ -57,7 +57,7 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 ## Avancement
 
 - [x] L0 : outils, VM de test
-- [x] L1 : faisabilité Windows, compte Microsoft en ligne et hors ligne, à condition de désactiver Hello uniquement
+- [x] L1 : faisabilité Windows, compte Microsoft en ligne et hors ligne ; la condition « Hello uniquement désactivé » a été levée le 14/10/2026 (D12)
 - [x] L2 : spécification du protocole
 - [x] L3 : application Android : clés StrongBox, association, état du PC en temps réel, déverrouillage par bouton et par tuile, validés sur Pixel 5
 - [x] L4 : service et tuile : coffre, canaux locaux, soumission automatique, serveur HTTPS en TLS 1.3, association, déverrouillage depuis le téléphone et depuis la tuile, validés en VM
@@ -67,4 +67,4 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 
 ## Limitations connues
 
-Hello uniquement doit être désactivé. Le mot de passe du compte est conservé chiffré sur le PC. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md) ; secours dans [docs/install.md](docs/install.md), section 8.
+« Hello uniquement » peut rester activé (D12, à confirmer sur le PC principal). Le mot de passe du compte est conservé chiffré sur le PC. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md) ; secours dans [docs/install.md](docs/install.md), section 8.

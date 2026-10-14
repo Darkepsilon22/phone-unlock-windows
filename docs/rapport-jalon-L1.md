@@ -72,3 +72,7 @@ Sur le PC de l'utilisatrice, `DevicePasswordLessBuildVersion = 2` (Hello uniquem
 |---|---|
 | Désactiver Hello uniquement sur le PC | Poursuite de l'architecture actuelle (L2 à L6) |
 | Conserver Hello uniquement | Jalon refusé pour ce PC ; étude « authentification sans secret réutilisable » ou alternative de repli (lecteur biométrique Windows) |
+
+## Complément du 14/10/2026
+
+Avec la version actuelle du produit et de Windows (26200.9711), « Hello uniquement » activé n'empêche plus ni le déverrouillage ni la connexion après déconnexion : voir D12 dans `decisions.md` et `testing.md`. La condition de ce rapport est levée, sous réserve des vérifications sans Internet et sur le PC principal.

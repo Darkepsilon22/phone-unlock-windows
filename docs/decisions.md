@@ -92,3 +92,13 @@ L'application affiche l'état du PC tant qu'elle est ouverte : verrouillé, sess
 **Raisons** : une signature reconnue par Smart App Control exige un certificat payant (budget nul). Un certificat auto-signé devrait être ajouté aux magasins de confiance du PC : si sa clé fuyait, tout code signé avec elle y serait jugé de confiance. Ce qui empêche réellement une mise à jour malveillante (S09), c'est que seul un administrateur peut remplacer les fichiers installés.
 
 **Limites** : `SHA256SUMS.txt` voyage avec le paquet ; il détecte une copie corrompue ou incomplète, pas un paquet remplacé en entier. Quand le paquet passe par un autre support, comparer son `SHA256SUMS.txt` aux empreintes affichées par la compilation. Si Smart App Control est actif, il bloquerait la tuile : l'installeur s'arrête alors sans rien modifier. Sur le PC principal, il est désactivé (constaté le 14/10/2026).
+
+## D12 : « Hello uniquement » n'empêche plus la méthode (14/10/2026)
+
+**Constat** : dans la VM (Windows 11, version 26200.9711), avec « Hello uniquement » activé (`DevicePasswordLessBuildVersion = 2`), le déverrouillage depuis l'application réussit, de même après un redémarrage, ainsi qu'une vraie connexion après déconnexion, sans aucune session ouverte (`result status=0x00000000` à 18:12:34, ouverture de session de type 5 aussitôt après).
+
+**Écart avec le rapport L1** : le 12/10, deux connexions avaient été refusées (`0xC000006D`, sous-état `0xC000015B`). La cause n'est pas établie : mise à jour de Windows depuis, ou format d'envoi des identifiants changé après L1 (D6).
+
+**Décision** : la condition « Hello uniquement désactivé » est levée. L'installeur le signale seulement, à titre d'information. La recette continue avec ce réglage activé, comme sur le PC principal.
+
+**Limites** : vérifié avec Internet seulement. Le cas sans Internet et le PC principal (version 26300) restent à vérifier pendant la recette (L6). Si Windows refuse l'ouverture avec `0xC000015B`, désactiver le réglage : Paramètres, Comptes, Options de connexion.

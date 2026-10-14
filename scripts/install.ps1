@@ -124,7 +124,7 @@ if ($smartAppControl -eq 2) {
 }
 $passwordless = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device' -ErrorAction SilentlyContinue).DevicePasswordLessBuildVersion
 if ($passwordless -eq 2) {
-    Write-Warning '« Hello uniquement » est activé : Windows refusera le déverrouillage par téléphone (rapport L1). Ce script ne modifie pas ce réglage.'
+    '« Hello uniquement » est activé : compatible d''après la recette en VM (D12). Si Windows refuse l''ouverture avec 0xC000015B, désactive ce réglage ; ce script ne le modifie pas.'
 }
 
 $hashes = Get-PackageHashes

@@ -10,7 +10,7 @@ Personne n'a besoin de connaître ton mot de passe, ton PIN ou ton empreinte : t
 |---|---|
 | Windows 11 x64 | L'installeur le contrôle |
 | Compte Microsoft avec un mot de passe | Le mot de passe doit avoir servi **une fois en ligne** sur ce PC pour que l'ouverture fonctionne aussi sans réseau : se connecter une fois avec « Options de connexion », puis l'icône de clé |
-| « Hello uniquement » désactivé | Paramètres, Comptes, Options de connexion : désactiver « Pour plus de sécurité, autoriser uniquement la connexion Windows Hello pour les comptes Microsoft sur cet appareil ». Sinon Windows refuse la connexion par mot de passe (rapport L1). L'installeur le signale sans rien changer |
+| « Hello uniquement » | Peut rester activé : connexion et déverrouillage vérifiés en VM (D12). Si Windows refuse l'ouverture avec `0xC000015B` (`cp.log`), le désactiver : Paramètres, Comptes, Options de connexion, « Pour plus de sécurité, autoriser uniquement la connexion Windows Hello… ». L'installeur le signale sans rien changer |
 | Smart App Control désactivé | Sécurité Windows, Contrôle des applications et du navigateur. S'il est actif, l'installeur s'arrête sans rien modifier, car la tuile n'est pas signée par une autorité reconnue (D11). Ne pas le désactiver pour PhoneUnlock |
 | Téléphone Android 11 ou plus | Avec une empreinte de classe forte |
 | Même réseau | Même Wi-Fi que le PC, ou point d'accès du téléphone (D3) |
