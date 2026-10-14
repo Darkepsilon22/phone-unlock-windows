@@ -60,6 +60,7 @@ La clé de signature de l'APK (`%USERPROFILE%\.phoneunlock\release.jks`, PKCS12,
 - **Hello uniquement** peut rester activé : connexion et déverrouillage vérifiés en VM le 14/10/2026, contrairement au rapport L1 (D12). À confirmer sans Internet et sur le PC principal ; si Windows refuse avec `0xC000015B`, le désactiver.
 - Le mot de passe doit avoir servi **une fois en ligne** sur le PC pour que l'ouverture hors ligne fonctionne.
 - `provision` fait vérifier le mot de passe par Windows (`LogonUserW`, identité `MicrosoftAccount\adresse` lue par `NetUserGetInfo` niveau 24) avant de l'enregistrer, en ligne comme hors ligne. Chaque mot de passe erroné compte comme une tentative ratée pour Windows. `pair`, `revoke` et `history --clear` font la même vérification (F04, F12) : une session ouverte laissée sans surveillance ne suffit pas pour associer un téléphone, en retirer un ou effacer l'historique.
+- Après un changement du mot de passe du compte Microsoft, Windows accepte encore l'ancien sur ce PC (constaté en VM le 14/10/2026, T11) ; le service, qui envoie l'ancien, continue donc de fonctionner. Après un changement fait pour une raison de sécurité, relancer `provision` pour que seul le nouveau soit conservé.
 - **Pixel 5** : plus de correctifs de sécurité depuis novembre 2023.
 - Le même Wi-Fi ne prouve pas la proximité. Un déverrouillage depuis le téléphone ouvre la session pour la personne devant le PC (D1).
 - BitLocker n'a pas été testé avec le produit : il a été désactivé dans la VM à cause des instantanés VirtualBox.

@@ -90,7 +90,7 @@ La commande demande d'abord le mot de passe du compte, vérifié par Windows. L'
 2. `adb uninstall dev.phoneunlock`, ce qui efface les clés du téléphone ;
 3. installer le nouvel APK, puis associer à nouveau.
 
-**Mot de passe du compte Microsoft changé** : relancer `provision`. Tant que ce n'est pas fait, Windows refuse l'ouverture et `status` affiche `WINDOWS_REJECTED`.
+**Mot de passe du compte Microsoft changé** : relancer `provision`. Windows accepte souvent encore l'ancien mot de passe sur ce PC pendant un temps, si bien que le déverrouillage peut continuer à marcher ; ne pas s'y fier, surtout si le changement a été fait par sécurité. Quand Windows finit par refuser l'ancien, `status` affiche `WINDOWS_REJECTED`.
 
 ## 5. Retirer un téléphone
 
