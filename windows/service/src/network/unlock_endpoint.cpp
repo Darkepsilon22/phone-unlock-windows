@@ -6,6 +6,7 @@ namespace
 {
 constexpr wchar_t UnlockPath[] = L"/v1/unlock";
 constexpr wchar_t RequestsPrefix[] = L"/v1/requests/";
+constexpr wchar_t ActivePath[] = L"/v1/requests/active";
 constexpr wchar_t ProofSuffix[] = L"/proof";
 constexpr wchar_t ResultSuffix[] = L"/result";
 constexpr size_t RequestIdHexLength = unlock_protocol::RequestIdSize * 2;
@@ -80,6 +81,10 @@ HttpResponse UnlockEndpoint::Handle(const HttpRequest& request)
         {
             return requests_.Prove(*pairing, *id, request.body);
         }
+    }
+    if (request.verb == HttpVerbGET && request.path == ActivePath)
+    {
+        return requests_.Active(*pairing);
     }
     if (request.verb == HttpVerbGET)
     {

@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-using ContextId = std::array<uint8_t, 16>;
+using ContextId = std::array<uint8_t, pipe_protocol::ContextIdSize>;
 
 using pipe_protocol::TileScenario;
 
@@ -26,7 +26,7 @@ class LogonTiles
 public:
     explicit LogonTiles(ChangeFeed& changes);
 
-    std::optional<uint64_t> Register(TileScenario scenario, std::vector<std::wstring> sids);
+    uint64_t Register(TileScenario scenario, std::vector<std::wstring> sids, const ContextId& context);
     void Unregister(uint64_t ticket);
     std::optional<std::wstring> WaitForAuthorization(uint64_t ticket, const std::function<bool()>& keepWaiting);
 

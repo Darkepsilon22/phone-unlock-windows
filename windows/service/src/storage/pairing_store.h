@@ -25,6 +25,7 @@ public:
 
     HRESULT Save(const Pairing& pairing);
     std::optional<Pairing> FindByTransport(const crypto::Digest& fingerprint);
+    std::optional<Pairing> FindByAccount(const std::wstring& sid);
     size_t Count();
 
 private:

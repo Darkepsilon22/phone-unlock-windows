@@ -41,6 +41,11 @@ TEST(SignedMessageMatchesReferenceVector)
     CHECK(Sha256Hex(message) == L"59bdd4587141fd4adfd9baf5d3dfd0d6139785f3680ed775c895da842e722a50");
 }
 
+TEST(MatchCodeMatchesReferenceVector)
+{
+    CHECK(unlock_protocol::MatchCode(ReferenceRequest()) == "3880");
+}
+
 TEST(SignedMessageDependsOnContextAndNonce)
 {
     unlock_protocol::AuthorizationRequest other = ReferenceRequest();

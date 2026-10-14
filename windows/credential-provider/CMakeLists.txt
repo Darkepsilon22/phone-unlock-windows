@@ -11,4 +11,4 @@ add_library(PhoneUnlockProtoCP SHARED
     src/PhoneUnlockProtoCP.def
 )
 
-target_link_libraries(PhoneUnlockProtoCP PRIVATE PhoneUnlockShared secur32 shlwapi ole32 gdi32 user32 advapi32 uuid)
+target_link_libraries(PhoneUnlockProtoCP PRIVATE PhoneUnlockShared bcrypt secur32 shlwapi ole32 gdi32 user32 advapi32 uuid)

@@ -48,6 +48,16 @@ bool PayloadWriter::WriteStringList(const std::vector<std::wstring>& texts)
     return true;
 }
 
+bool PayloadWriter::WriteBytes(const uint8_t* bytes, size_t length)
+{
+    if (length > MaxStringLength)
+    {
+        return false;
+    }
+    const auto prefix = static_cast<uint16_t>(length);
+    return bytes_.Append(reinterpret_cast<const BYTE*>(&prefix), sizeof(prefix)) && bytes_.Append(bytes, length);
+}
+
 const SecureBytes& PayloadWriter::Bytes() const
 {
     return bytes_;
@@ -101,6 +111,17 @@ bool PayloadReader::ReadStringList(std::vector<std::wstring>* texts)
         }
     }
     return true;
+}
+
+bool PayloadReader::ReadBytes(std::vector<uint8_t>* bytes)
+{
+    uint16_t length = 0;
+    if (!ReadLength(&length))
+    {
+        return false;
+    }
+    bytes->resize(length);
+    return Take(bytes->data(), length);
 }
 
 bool PayloadReader::AtEnd() const

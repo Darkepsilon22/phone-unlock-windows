@@ -209,7 +209,7 @@ HRESULT Provider::AddCredentialFor(DWORD userIndex)
     }
 
     Credential* credential = nullptr;
-    hr = Credential::Create(scenario_, user, &credential);
+    hr = Credential::Create(scenario_, user, [this](const std::wstring& sid) { return RequestUnlock(sid); }, &credential);
     user->Release();
     if (FAILED(hr))
     {
@@ -260,6 +260,16 @@ void Provider::StartListener()
         [this](const std::wstring& sid, SecureString password) { OnServiceReady(sid, std::move(password)); });
     std::lock_guard lock(mutex_);
     listener_ = std::move(listener);
+}
+
+std::wstring Provider::RequestUnlock(const std::wstring& sid)
+{
+    std::shared_ptr<ServiceListener> listener;
+    {
+        std::lock_guard lock(mutex_);
+        listener = listener_;
+    }
+    return listener ? listener->RequestUnlock(sid) : std::wstring(ServiceListener::UnavailableStatus);
 }
 
 void Provider::StopListener()

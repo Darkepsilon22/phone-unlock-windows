@@ -11,12 +11,20 @@ bool StopWaiting()
     return false;
 }
 
+ContextId NewContext()
+{
+    static uint8_t next = 0;
+    ContextId context = {};
+    context.fill(++next);
+    return context;
+}
+
 TEST(ShownTileIsFoundWithItsScenario)
 {
     ChangeFeed feed;
     LogonTiles tiles(feed);
     const uint64_t before = feed.Version();
-    const std::optional<uint64_t> ticket = tiles.Register(TileScenario::Unlock, { Alice });
+    const std::optional<uint64_t> ticket = tiles.Register(TileScenario::Unlock, { Alice }, NewContext());
     CHECK(ticket.has_value());
     CHECK(feed.Version() > before);
     CHECK(tiles.Find(Alice)->scenario == TileScenario::Unlock);
@@ -27,7 +35,7 @@ TEST(HiddenTileIsForgotten)
 {
     ChangeFeed feed;
     LogonTiles tiles(feed);
-    const uint64_t ticket = *tiles.Register(TileScenario::Logon, { Alice });
+    const uint64_t ticket = tiles.Register(TileScenario::Logon, { Alice }, NewContext());
     tiles.Unregister(ticket);
     CHECK(!tiles.Find(Alice).has_value());
 }
@@ -36,10 +44,10 @@ TEST(EachDisplayGetsANewContext)
 {
     ChangeFeed feed;
     LogonTiles tiles(feed);
-    const uint64_t first = *tiles.Register(TileScenario::Unlock, { Alice });
+    const uint64_t first = tiles.Register(TileScenario::Unlock, { Alice }, NewContext());
     const ContextId firstContext = tiles.Find(Alice)->context;
     tiles.Unregister(first);
-    tiles.Register(TileScenario::Unlock, { Alice });
+    tiles.Register(TileScenario::Unlock, { Alice }, NewContext());
     CHECK(tiles.Find(Alice)->context != firstContext);
 }
 
@@ -47,7 +55,7 @@ TEST(AuthorizationReachesOnlyTheMatchingContext)
 {
     ChangeFeed feed;
     LogonTiles tiles(feed);
-    const uint64_t ticket = *tiles.Register(TileScenario::Unlock, { Alice });
+    const uint64_t ticket = tiles.Register(TileScenario::Unlock, { Alice }, NewContext());
     ContextId stale = tiles.Find(Alice)->context;
     stale[0] ^= 1;
     CHECK(!tiles.Authorize(Alice, stale));
@@ -62,7 +70,7 @@ TEST(AuthorizationNeedsTheAccountOnTheTile)
 {
     ChangeFeed feed;
     LogonTiles tiles(feed);
-    tiles.Register(TileScenario::Unlock, { Alice });
+    tiles.Register(TileScenario::Unlock, { Alice }, NewContext());
     CHECK(!tiles.Authorize(Bob, tiles.Find(Alice)->context));
 }
 
@@ -70,7 +78,7 @@ TEST(AuthorizationAfterTileHiddenIsRefused)
 {
     ChangeFeed feed;
     LogonTiles tiles(feed);
-    const uint64_t ticket = *tiles.Register(TileScenario::Unlock, { Alice });
+    const uint64_t ticket = tiles.Register(TileScenario::Unlock, { Alice }, NewContext());
     const ContextId context = tiles.Find(Alice)->context;
     tiles.Unregister(ticket);
     CHECK(!tiles.Authorize(Alice, context));

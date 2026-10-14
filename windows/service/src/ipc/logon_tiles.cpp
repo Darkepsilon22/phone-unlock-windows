@@ -1,5 +1,4 @@
 #include "ipc/logon_tiles.h"
-#include "crypto/crypto.h"
 #include "log.h"
 #include <algorithm>
 #include <chrono>
@@ -18,15 +17,10 @@ LogonTiles::LogonTiles(ChangeFeed& changes) : changes_(changes)
 {
 }
 
-std::optional<uint64_t> LogonTiles::Register(TileScenario scenario, std::vector<std::wstring> sids)
+uint64_t LogonTiles::Register(TileScenario scenario, std::vector<std::wstring> sids, const ContextId& context)
 {
-    const std::optional<std::vector<uint8_t>> random = crypto::RandomBytes(std::tuple_size_v<ContextId>);
-    if (!random)
-    {
-        return std::nullopt;
-    }
     Tile tile;
-    std::copy(random->begin(), random->end(), tile.view.context.begin());
+    tile.view.context = context;
     tile.view.scenario = scenario;
     tile.sids = std::move(sids);
     uint64_t ticket = 0;

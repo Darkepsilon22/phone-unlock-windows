@@ -7,8 +7,7 @@ enum FieldId : DWORD
     TileImageField,
     LabelField,
     StatusField,
-    PasswordField,
-    SubmitField,
+    RequestLinkField,
     FieldCount
 };
 

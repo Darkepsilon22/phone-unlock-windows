@@ -6,9 +6,8 @@
 namespace
 {
 constexpr wchar_t LabelText[] = L"Téléphone";
-constexpr wchar_t SubmitText[] = L"Envoyer";
-constexpr wchar_t InitialStatus[] = L"Saisis le mot de passe du compte de test.";
-constexpr wchar_t EmptyPasswordStatus[] = L"Mot de passe vide.";
+constexpr wchar_t RequestLinkText[] = L"Demander au téléphone";
+constexpr wchar_t InitialStatus[] = L"Ouvre PhoneUnlock sur le téléphone, ou demande ici.";
 constexpr wchar_t AcceptedStatus[] = L"Windows a accepté les identifiants.";
 constexpr wchar_t PreparationFailedFormat[] = L"Échec de préparation : 0x%08X";
 constexpr wchar_t RejectedFormat[] = L"Refus Windows : 0x%08X (0x%08X)";
@@ -22,8 +21,8 @@ PCWSTR InitialFieldValue(DWORD fieldId)
         return LabelText;
     case StatusField:
         return InitialStatus;
-    case SubmitField:
-        return SubmitText;
+    case RequestLinkField:
+        return RequestLinkText;
     default:
         return L"";
     }
@@ -49,7 +48,6 @@ Credential::Credential()
 
 Credential::~Credential()
 {
-    SecureFree(&fieldValues_[PasswordField]);
     for (PWSTR& value : fieldValues_)
     {
         CoTaskMemFree(value);
@@ -64,7 +62,7 @@ Credential::~Credential()
 }
 
 HRESULT Credential::Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
-    Credential** credential)
+    UnlockRequester requester, Credential** credential)
 {
     *credential = nullptr;
     auto* instance = new (std::nothrow) Credential();
@@ -72,7 +70,7 @@ HRESULT Credential::Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredent
     {
         return E_OUTOFMEMORY;
     }
-    const HRESULT hr = instance->Initialize(scenario, user);
+    const HRESULT hr = instance->Initialize(scenario, user, std::move(requester));
     if (FAILED(hr))
     {
         instance->Release();
@@ -82,9 +80,11 @@ HRESULT Credential::Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredent
     return S_OK;
 }
 
-HRESULT Credential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user)
+HRESULT Credential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
+    UnlockRequester requester)
 {
     scenario_ = scenario;
+    requestUnlock_ = std::move(requester);
     GUID accountProvider = GUID_NULL;
     HRESULT hr = user->GetStringValue(PKEY_Identity_QualifiedUserName, &qualifiedUserName_);
     if (SUCCEEDED(hr))
@@ -157,7 +157,6 @@ IFACEMETHODIMP Credential::SetSelected(BOOL* autoLogon)
 
 IFACEMETHODIMP Credential::SetDeselected()
 {
-    ClearPassword();
     return S_OK;
 }
 
@@ -199,14 +198,9 @@ IFACEMETHODIMP Credential::GetCheckboxValue(DWORD, BOOL*, PWSTR*)
     return E_NOTIMPL;
 }
 
-IFACEMETHODIMP Credential::GetSubmitButtonValue(DWORD fieldId, DWORD* adjacentTo)
+IFACEMETHODIMP Credential::GetSubmitButtonValue(DWORD, DWORD*)
 {
-    if (fieldId != SubmitField)
-    {
-        return E_INVALIDARG;
-    }
-    *adjacentTo = PasswordField;
-    return S_OK;
+    return E_NOTIMPL;
 }
 
 IFACEMETHODIMP Credential::GetComboBoxValueCount(DWORD, DWORD*, DWORD*)
@@ -219,14 +213,9 @@ IFACEMETHODIMP Credential::GetComboBoxValueAt(DWORD, DWORD, PWSTR*)
     return E_NOTIMPL;
 }
 
-IFACEMETHODIMP Credential::SetStringValue(DWORD fieldId, PCWSTR value)
+IFACEMETHODIMP Credential::SetStringValue(DWORD, PCWSTR)
 {
-    if (fieldId != PasswordField)
-    {
-        return E_INVALIDARG;
-    }
-    SecureFree(&fieldValues_[PasswordField]);
-    return SHStrDupW(value, &fieldValues_[PasswordField]);
+    return E_NOTIMPL;
 }
 
 IFACEMETHODIMP Credential::SetCheckboxValue(DWORD, BOOL)
@@ -239,9 +228,14 @@ IFACEMETHODIMP Credential::SetComboBoxSelectedValue(DWORD, DWORD)
     return E_NOTIMPL;
 }
 
-IFACEMETHODIMP Credential::CommandLinkClicked(DWORD)
+IFACEMETHODIMP Credential::CommandLinkClicked(DWORD fieldId)
 {
-    return E_NOTIMPL;
+    if (fieldId != RequestLinkField || !requestUnlock_)
+    {
+        return E_INVALIDARG;
+    }
+    ShowStatus(requestUnlock_(Sid()).c_str());
+    return S_OK;
 }
 
 IFACEMETHODIMP Credential::GetSerialization(CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE* response,
@@ -253,25 +247,21 @@ IFACEMETHODIMP Credential::GetSerialization(CREDENTIAL_PROVIDER_GET_SERIALIZATIO
     *statusIcon = CPSI_NONE;
     ZeroMemory(serialization, sizeof(*serialization));
 
-    const bool automatic = !autoLogonPassword_.empty();
-    PCWSTR password = automatic ? autoLogonPassword_.c_str() : fieldValues_[PasswordField];
-    if (!password || *password == L'\0')
+    if (autoLogonPassword_.empty())
     {
-        ShowStatus(EmptyPasswordStatus);
+        ShowStatus(InitialStatus);
         return S_OK;
     }
 
     PWSTR protectedPassword = nullptr;
-    HRESULT hr = CopyProtectedPassword(password, scenario_, &protectedPassword);
+    HRESULT hr = CopyProtectedPassword(autoLogonPassword_.c_str(), scenario_, &protectedPassword);
     if (SUCCEEDED(hr))
     {
         hr = Serialize(protectedPassword, serialization);
     }
     SecureFree(&protectedPassword);
     autoLogonPassword_ = SecureString();
-    ClearPassword();
-    LogLine(L"serialization hr=0x%08X scenario=%d local=%d automatic=%d", AsHex(hr), scenario_, isLocalAccount_,
-        automatic);
+    LogLine(L"serialization hr=0x%08X scenario=%d local=%d", AsHex(hr), scenario_, isLocalAccount_);
 
     if (FAILED(hr))
     {
@@ -312,7 +302,6 @@ IFACEMETHODIMP Credential::ReportResult(NTSTATUS status, NTSTATUS subStatus, PWS
     *statusIcon = CPSI_NONE;
     LogLine(L"result status=0x%08X substatus=0x%08X scenario=%d local=%d",
         AsHex(status), AsHex(subStatus), scenario_, isLocalAccount_);
-    ClearPassword();
     if (reportResult_)
     {
         reportResult_(status, subStatus);
@@ -361,15 +350,5 @@ void Credential::ShowStatus(PCWSTR text)
     if (events_)
     {
         events_->SetFieldString(this, StatusField, text);
-    }
-}
-
-void Credential::ClearPassword()
-{
-    SecureFree(&fieldValues_[PasswordField]);
-    SHStrDupW(L"", &fieldValues_[PasswordField]);
-    if (events_)
-    {
-        events_->SetFieldString(this, PasswordField, L"");
     }
 }

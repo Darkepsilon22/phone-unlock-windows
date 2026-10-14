@@ -5,7 +5,6 @@ const FieldState FieldStates[FieldCount] =
     { CPFS_DISPLAY_IN_BOTH,          CPFIS_NONE    },
     { CPFS_DISPLAY_IN_BOTH,          CPFIS_NONE    },
     { CPFS_DISPLAY_IN_SELECTED_TILE, CPFIS_NONE    },
-    { CPFS_DISPLAY_IN_SELECTED_TILE, CPFIS_FOCUSED },
     { CPFS_DISPLAY_IN_SELECTED_TILE, CPFIS_NONE    },
 };
 
@@ -14,8 +13,7 @@ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR FieldDescriptors[FieldCount] =
     { TileImageField, CPFT_TILE_IMAGE,    const_cast<PWSTR>(L"Image"),     CPFG_CREDENTIAL_PROVIDER_LOGO  },
     { LabelField,     CPFT_LARGE_TEXT,    const_cast<PWSTR>(L"Téléphone"), CPFG_CREDENTIAL_PROVIDER_LABEL },
     { StatusField,    CPFT_SMALL_TEXT,    const_cast<PWSTR>(L"État"),      GUID_NULL },
-    { PasswordField,  CPFT_PASSWORD_TEXT, const_cast<PWSTR>(L"Mot de passe du compte de test"), GUID_NULL },
-    { SubmitField,    CPFT_SUBMIT_BUTTON, const_cast<PWSTR>(L"Envoyer"),   GUID_NULL },
+    { RequestLinkField, CPFT_COMMAND_LINK, const_cast<PWSTR>(L"Demander"), GUID_NULL },
 };
 
 bool IsValidField(DWORD fieldId)

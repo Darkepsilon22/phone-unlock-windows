@@ -25,9 +25,20 @@ enum class MessageType : uint16_t
     StartPairing = 7,
     PairingStatus = 8,
     ConfirmPairing = 9,
+    RequestUnlock = 10,
+    UnlockCode = 11,
 };
 
-constexpr MessageType LastMessageType = MessageType::ConfirmPairing;
+constexpr MessageType LastMessageType = MessageType::UnlockCode;
+constexpr size_t ContextIdSize = 16;
+
+enum class TileRequestOutcome : int32_t
+{
+    Created = 0,
+    NoPhone = 1,
+    WrongContext = 2,
+    RateLimited = 3,
+};
 
 enum class TileScenario : int32_t
 {
@@ -50,6 +61,7 @@ public:
     bool WriteString(const wchar_t* text, size_t length);
     bool WriteString(const std::wstring& text);
     bool WriteStringList(const std::vector<std::wstring>& texts);
+    bool WriteBytes(const uint8_t* bytes, size_t length);
 
     const SecureBytes& Bytes() const;
 
@@ -66,6 +78,7 @@ public:
     bool ReadString(std::wstring* text);
     bool ReadSecret(SecureString* secret);
     bool ReadStringList(std::vector<std::wstring>* texts);
+    bool ReadBytes(std::vector<uint8_t>* bytes);
     bool AtEnd() const;
 
 private:

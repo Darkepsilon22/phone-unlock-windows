@@ -9,6 +9,7 @@ using test_support::GeneratedKey;
 
 const std::wstring Alice = L"S-1-5-21-1-2-3-1001";
 constexpr ULONGLONG RequestLifetime = 30'000;
+constexpr ULONGLONG TileRequestLifetime = 60'000;
 constexpr ULONGLONG QuotaWindow = 60'000;
 
 bool StopWaiting()
@@ -27,18 +28,40 @@ class UnlockFixture
 public:
     UnlockFixture()
         : tiles_(changes_),
-          requests_(tiles_, cbor::Bytes(16, 3), "PC salon", [](const std::wstring&) { return std::string("hanjason"); },
-              clock_.Function(), [] { return uint64_t{ 1'760'000'000 }; })
+          pairings_(directory_.Path()),
+          requests_(tiles_, pairings_, changes_, cbor::Bytes(16, 3), "PC salon",
+              [](const std::wstring&) { return std::string("hanjason"); }, clock_.Function(),
+              [] { return uint64_t{ 1'760'000'000 }; })
     {
         pairing_.pairingId = cbor::Bytes(16, 4);
         pairing_.accountSid = Alice;
         pairing_.phoneName = "Pixel 5";
         pairing_.authorizationSpki = phoneKey_.Spki();
+        pairing_.transportFingerprint.fill(0x42);
+        pairings_.Save(pairing_);
     }
 
     uint64_t ShowTile(TileScenario scenario = TileScenario::Unlock)
     {
-        return *tiles_.Register(scenario, { Alice });
+        ContextId context = {};
+        context.fill(++contexts_);
+        return tiles_.Register(scenario, { Alice }, context);
+    }
+
+    TileRequest RequestFromTile()
+    {
+        const TileRequest outcome = requests_.CreateFromTile(Alice, tiles_.Find(Alice)->context);
+        const HttpResponse active = requests_.Active(pairing_);
+        if (active.status == 200)
+        {
+            last_ = RequestFrom(active);
+        }
+        return outcome;
+    }
+
+    ChangeFeed& Changes()
+    {
+        return changes_;
     }
 
     HttpResponse Create()
@@ -106,6 +129,7 @@ public:
     }
 
 private:
+public:
     static unlock_protocol::AuthorizationRequest RequestFrom(const HttpResponse& response)
     {
         const std::optional<cbor::Value> holder = cbor::Decode(response.body);
@@ -128,7 +152,10 @@ private:
 
     ChangeFeed changes_;
     LogonTiles tiles_;
+    test_support::TemporaryDirectory directory_;
+    PairingStore pairings_;
     test_support::FakeClock clock_;
+    uint8_t contexts_ = 0;
     UnlockRequests requests_;
     GeneratedKey phoneKey_;
     Pairing pairing_;
@@ -293,5 +320,65 @@ TEST(MalformedProofIsRejected)
               .Prove(fixture.PhonePairing(), cbor::Bytes(16, 0),
                   cbor::Encode(cbor::Object({ { 1, cbor::ByteString(id) }, { 2, cbor::ByteString(cbor::Bytes(64, 0)) } })))
               .status == 400);
+}
+TEST(TileRequestGivesAMatchCodeAndReachesThePhone)
+{
+    UnlockFixture fixture;
+    const uint64_t ticket = fixture.ShowTile(TileScenario::Logon);
+    const uint64_t before = fixture.Changes().Version();
+    const TileRequest outcome = fixture.RequestFromTile();
+    CHECK(outcome.outcome == TileRequest::Outcome::Created);
+    CHECK(outcome.matchCode.size() == 4);
+    CHECK(outcome.matchCode == unlock_protocol::MatchCode(fixture.Last()));
+    CHECK(fixture.Changes().Version() > before);
+    CHECK(fixture.Last().expiresAt == fixture.Last().issuedAt + 60);
+    CHECK(fixture.Prove().status == 200);
+    CHECK(fixture.Tiles().WaitForAuthorization(ticket, StopWaiting) == Alice);
+}
+
+TEST(TileRequestLastsSixtySeconds)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    fixture.RequestFromTile();
+    fixture.Clock().Advance(TileRequestLifetime - 1);
+    CHECK(fixture.Prove().status == 200);
+}
+
+TEST(TileRequestExpiresAfterSixtySeconds)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    fixture.RequestFromTile();
+    fixture.Clock().Advance(TileRequestLifetime);
+    CHECK(fixture.Requests().Active(fixture.PhonePairing()).status == 204);
+    CHECK(fixture.Prove().status == 410);
+}
+
+TEST(TileRequestNeedsTheCurrentContext)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    ContextId stale = fixture.Tiles().Find(Alice)->context;
+    stale[0] ^= 1;
+    CHECK(fixture.Requests().CreateFromTile(Alice, stale).outcome == TileRequest::Outcome::WrongContext);
+}
+
+TEST(TileRequestNeedsAPairedPhone)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    CHECK(fixture.Requests().CreateFromTile(L"S-1-5-21-9-9-9-1001", fixture.Tiles().Find(Alice)->context).outcome ==
+        TileRequest::Outcome::NoPhone);
+}
+
+TEST(NoActiveRequestMeansNoContent)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    CHECK(fixture.Requests().Active(fixture.PhonePairing()).status == 204);
+    fixture.RequestFromTile();
+    fixture.PhonePairing().pairingId = cbor::Bytes(16, 9);
+    CHECK(fixture.Requests().Active(fixture.PhonePairing()).status == 204);
 }
 }

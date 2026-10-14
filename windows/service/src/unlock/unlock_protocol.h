@@ -34,4 +34,6 @@ struct AuthorizationRequest
 cbor::Value Encode(const AuthorizationRequest& request);
 
 cbor::Bytes SignedMessage(const AuthorizationRequest& request);
+
+std::string MatchCode(const AuthorizationRequest& request);
 }

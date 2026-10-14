@@ -44,6 +44,7 @@ private:
 
     void StartListener();
     void StopListener();
+    std::wstring RequestUnlock(const std::wstring& sid);
     void OnServiceReady(const std::wstring& sid, SecureString password);
     void ArmPendingLogon(DWORD* defaultIndex, BOOL* autoLogonWithDefault);
 

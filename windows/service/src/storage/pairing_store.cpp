@@ -88,6 +88,14 @@ std::optional<Pairing> PairingStore::FindByTransport(const crypto::Digest& finge
     return match == pairings_.end() ? std::nullopt : std::optional<Pairing>(*match);
 }
 
+std::optional<Pairing> PairingStore::FindByAccount(const std::wstring& sid)
+{
+    std::lock_guard lock(mutex_);
+    const auto match = std::find_if(pairings_.rbegin(), pairings_.rend(),
+        [&sid](const Pairing& pairing) { return pairing.accountSid == sid; });
+    return match == pairings_.rend() ? std::nullopt : std::optional<Pairing>(*match);
+}
+
 size_t PairingStore::Count()
 {
     std::lock_guard lock(mutex_);

@@ -5,6 +5,7 @@
 namespace api_errors
 {
 constexpr USHORT Ok = 200;
+constexpr USHORT NoContent = 204;
 constexpr USHORT BadRequest = 400;
 constexpr USHORT Forbidden = 403;
 constexpr USHORT NotFound = 404;

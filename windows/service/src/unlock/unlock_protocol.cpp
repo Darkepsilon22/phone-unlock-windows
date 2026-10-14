@@ -1,5 +1,7 @@
 #include "unlock/unlock_protocol.h"
+#include "crypto/crypto.h"
 #include "pairing/pairing_protocol.h"
+#include <cstdio>
 
 namespace unlock_protocol
 {
@@ -7,6 +9,8 @@ namespace
 {
 constexpr char SignatureDomain[] = "PhoneUnlock-v1-authorize";
 constexpr uint64_t AllowDecision = 1;
+constexpr unsigned MatchCodeModulus = 10'000;
+constexpr size_t MatchCodeDigits = 4;
 
 enum RequestField : uint64_t
 {
@@ -47,6 +51,19 @@ cbor::Map Fields(const AuthorizationRequest& request)
 cbor::Value Encode(const AuthorizationRequest& request)
 {
     return cbor::Object(Fields(request));
+}
+
+std::string MatchCode(const AuthorizationRequest& request)
+{
+    const std::optional<crypto::Digest> digest = crypto::Sha256(cbor::Encode(Encode(request)));
+    if (!digest)
+    {
+        return {};
+    }
+    const unsigned value = ((static_cast<unsigned>((*digest)[0]) << 8) | (*digest)[1]) % MatchCodeModulus;
+    char code[MatchCodeDigits + 1] = {};
+    std::snprintf(code, sizeof(code), "%04u", value);
+    return code;
 }
 
 cbor::Bytes SignedMessage(const AuthorizationRequest& request)
