@@ -42,7 +42,8 @@ private:
     bool Open();
     void Close();
     bool ReceiveNext(HANDLE stopEvent);
-    void Handle(HTTP_REQUEST_ID requestId, HTTP_CONNECTION_ID connectionId, HttpRequest request, bool hasMoreBody);
+    void Handle(HTTP_REQUEST_ID requestId, std::optional<HTTP_CONNECTION_ID> certifiedConnection, HttpRequest request,
+        bool hasMoreBody);
     bool ReadBody(HTTP_REQUEST_ID requestId, cbor::Bytes* body);
     std::optional<crypto::Digest> ClientFingerprint(HTTP_CONNECTION_ID connectionId);
     void Send(HTTP_REQUEST_ID requestId, const HttpResponse& response);

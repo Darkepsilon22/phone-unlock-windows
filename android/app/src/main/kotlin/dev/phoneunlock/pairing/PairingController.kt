@@ -150,7 +150,12 @@ class PairingController(private val activity: FragmentActivity) {
         mutableState.value = PairingState.Failed(describe(error))
     }
 
-    private fun describe(error: Exception): String = when (error) {
+    private fun describe(error: Exception): String {
+        val rootCause = generateSequence(error.cause) { it.cause }.lastOrNull() ?: return summary(error)
+        return "${summary(error)}\n\nDétail : ${rootCause.javaClass.simpleName} ${rootCause.message.orEmpty()}"
+    }
+
+    private fun summary(error: Exception): String = when (error) {
         is PairingFailure -> when (error.reason) {
             PairingFailure.Reason.PC_UNREACHABLE ->
                 "PC injoignable. Vérifie que le téléphone et le PC sont sur le même Wi-Fi ou le même partage de connexion."

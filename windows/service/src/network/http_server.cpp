@@ -210,27 +210,32 @@ bool HttpServer::ReceiveNext(HANDLE stopEvent)
     const HTTP_REQUEST_ID requestId = request->RequestId;
     const HTTP_CONNECTION_ID connectionId = request->ConnectionId;
     const bool hasMoreBody = (request->Flags & HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS) != 0;
+    const bool clientCertificateSent = request->pSslInfo && request->pSslInfo->SslClientCertNegotiated != 0;
 
     if (workers_.ActiveCount() >= MaxConcurrentRequests)
     {
         Send(requestId, { TooManyRequests, {} });
         return true;
     }
-    workers_.Start([this, requestId, connectionId, hasMoreBody, copy = std::move(copy)]() mutable {
-        Handle(requestId, connectionId, std::move(copy), hasMoreBody);
+    workers_.Start([this, requestId, connectionId, hasMoreBody, clientCertificateSent, copy = std::move(copy)]() mutable {
+        Handle(requestId, clientCertificateSent ? std::optional(connectionId) : std::nullopt, std::move(copy), hasMoreBody);
     });
     return true;
 }
 
-void HttpServer::Handle(HTTP_REQUEST_ID requestId, HTTP_CONNECTION_ID connectionId, HttpRequest request,
-    bool hasMoreBody)
+void HttpServer::Handle(HTTP_REQUEST_ID requestId, std::optional<HTTP_CONNECTION_ID> certifiedConnection,
+    HttpRequest request, bool hasMoreBody)
 {
     if (hasMoreBody && !ReadBody(requestId, &request.body))
     {
         Send(requestId, { TooLarge, {} });
         return;
     }
-    request.clientFingerprint = ClientFingerprint(connectionId);
+    LogLine(L"https client certificate sent in handshake=%d", certifiedConnection.has_value());
+    if (certifiedConnection)
+    {
+        request.clientFingerprint = ClientFingerprint(*certifiedConnection);
+    }
     Send(requestId, handler_(request));
 }
 
