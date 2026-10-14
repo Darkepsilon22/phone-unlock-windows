@@ -26,9 +26,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
 import dev.phoneunlock.scanner.QrScanner
+import dev.phoneunlock.unlock.UnlockController
+import dev.phoneunlock.unlock.UnlockPanel
 
 @Composable
-fun PairingScreen(controller: PairingController, lifecycleOwner: LifecycleOwner) {
+fun PairingScreen(controller: PairingController, unlock: UnlockController, lifecycleOwner: LifecycleOwner) {
     val state by controller.state.collectAsState()
 
     BackHandler(enabled = state !is PairingState.Home && state !is PairingState.Confirming) { controller.showHome() }
@@ -42,7 +44,7 @@ fun PairingScreen(controller: PairingController, lifecycleOwner: LifecycleOwner)
     ) {
         Text("PhoneUnlock", style = MaterialTheme.typography.headlineSmall)
         when (val current = state) {
-            is PairingState.Home -> Home(current, controller::startScan)
+            is PairingState.Home -> Home(current, controller::startScan, unlock, lifecycleOwner)
             is PairingState.Scanning -> Scanning(current, lifecycleOwner, controller::onQrScanned, controller::showHome)
             PairingState.Connecting -> Progress("Connexion au PC…")
             is PairingState.Comparing -> Comparing(current, controller::confirmCodesMatch, controller::rejectCodes)
@@ -54,24 +56,32 @@ fun PairingScreen(controller: PairingController, lifecycleOwner: LifecycleOwner)
 }
 
 @Composable
-private fun Home(state: PairingState.Home, onPair: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val pairing = state.pairing
-            if (pairing == null) {
-                Text("Aucun PC associé.")
-            } else {
-                Text("PC associé : ${pairing.pcName}", fontWeight = FontWeight.Bold)
-                Text("Compte Windows : ${pairing.accountName}")
-            }
-            state.keyProtection?.let { Text("Clé d'autorisation : $it") }
-            if (!state.canPair) {
-                Text("Empreinte indisponible : ${state.biometric.label}", color = MaterialTheme.colorScheme.error)
+private fun Home(state: PairingState.Home, onPair: () -> Unit, unlock: UnlockController, lifecycleOwner: LifecycleOwner) {
+    val pairing = state.pairing
+    if (pairing != null) {
+        UnlockPanel(unlock, pairing, lifecycleOwner)
+    }
+    if (pairing == null || !state.canPair) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (pairing == null) {
+                    Text("Aucun PC associé.")
+                }
+                if (!state.canPair) {
+                    Text("Empreinte indisponible : ${state.biometric.label}", color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
-    Button(onClick = onPair, enabled = state.canPair, modifier = Modifier.fillMaxWidth()) {
-        Text(if (state.pairing == null) "Associer un PC" else "Associer à nouveau")
+    state.keyProtection?.let { Text("Clé d'autorisation : $it", style = MaterialTheme.typography.bodySmall) }
+    if (pairing == null) {
+        Button(onClick = onPair, enabled = state.canPair, modifier = Modifier.fillMaxWidth()) {
+            Text("Associer un PC")
+        }
+    } else {
+        OutlinedButton(onClick = onPair, enabled = state.canPair, modifier = Modifier.fillMaxWidth()) {
+            Text("Associer à nouveau")
+        }
     }
 }
 

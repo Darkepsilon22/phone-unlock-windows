@@ -2,6 +2,7 @@ package dev.phoneunlock.network
 
 import android.annotation.SuppressLint
 import dev.phoneunlock.pairing.PairingProtocol
+import dev.phoneunlock.security.TransportKey
 import java.net.InetAddress
 import java.net.Socket
 import java.security.MessageDigest
@@ -88,4 +89,12 @@ class Tls13SocketFactory(private val delegate: SSLSocketFactory) : SSLSocketFact
             return Tls13SocketFactory(context.socketFactory)
         }
     }
+}
+
+fun pinnedSocketFactory(transportKey: TransportKey, pcFingerprint: ByteArray): Tls13SocketFactory {
+    transportKey.ensureExists()
+    return Tls13SocketFactory.create(
+        ClientIdentity(transportKey.privateKey(), transportKey.certificate()),
+        PinnedServerTrust(pcFingerprint),
+    )
 }

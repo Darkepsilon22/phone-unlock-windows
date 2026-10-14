@@ -2,6 +2,7 @@ package dev.phoneunlock.pairing
 
 import dev.phoneunlock.encoding.Cbor
 import dev.phoneunlock.network.PcConnection
+import dev.phoneunlock.network.PcRequest
 import dev.phoneunlock.network.PcResponse
 import java.io.IOException
 import java.net.ConnectException
@@ -125,7 +126,10 @@ class PairingExchangeTest {
 
     private fun exchange(connection: PcConnection) = PairingExchange(qr, connection, transportSpki, authorizationSpki)
 
-    private fun error(status: Int, code: String) = PcConnection { _, _, _ -> PcResponse(status, Cbor.Object(mapOf(1L to Cbor.Text(code)))) }
+    private fun exchange(handler: (Endpoint, String, Cbor) -> PcResponse) =
+        exchange(PcConnection { request: PcRequest -> handler(request.endpoint, request.path, checkNotNull(request.body)) })
+
+    private fun error(status: Int, code: String) = PcConnection { PcResponse(status, Cbor.Object(mapOf(1L to Cbor.Text(code)))) }
 
     private fun challengeResponse() = PcResponse(200, challengeBody(PAIRING_ID))
 

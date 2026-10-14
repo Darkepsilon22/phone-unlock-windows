@@ -2,6 +2,7 @@ package dev.phoneunlock.pairing
 
 import dev.phoneunlock.encoding.Cbor
 import dev.phoneunlock.network.PcConnection
+import dev.phoneunlock.network.PcRequest
 import dev.phoneunlock.network.PcResponse
 import java.io.IOException
 import java.security.cert.CertificateException
@@ -39,7 +40,7 @@ class PairingExchange(
         var lastError: IOException? = null
         for (endpoint in qr.endpoints) {
             val response = try {
-                client.post(endpoint, PAIR_PATH, request)
+                client.send(PcRequest(endpoint, PAIR_PATH, post = true, body = request))
             } catch (handshake: SSLHandshakeException) {
                 if (handshake.hasCause<CertificateException>()) throw PairingFailure(PairingFailure.Reason.WRONG_PC)
                 lastError = handshake
@@ -61,7 +62,7 @@ class PairingExchange(
             ),
         )
         val response = try {
-            client.post(challenge.endpoint, CONFIRM_PATH, request)
+            client.send(PcRequest(challenge.endpoint, CONFIRM_PATH, post = true, body = request))
         } catch (unreachable: IOException) {
             throw PairingFailure(PairingFailure.Reason.PC_UNREACHABLE).apply { initCause(unreachable) }
         }

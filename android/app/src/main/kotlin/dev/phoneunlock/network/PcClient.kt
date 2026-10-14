@@ -21,27 +21,38 @@ class PcResponse(val status: Int, val body: Cbor.Object?) {
     }
 }
 
+class PcRequest(
+    val endpoint: Endpoint,
+    val path: String,
+    val post: Boolean,
+    val body: Cbor? = null,
+    val query: String? = null,
+)
+
 fun interface PcConnection {
-    fun post(endpoint: Endpoint, path: String, body: Cbor): PcResponse
+    fun send(request: PcRequest): PcResponse
 }
 
-class PcClient(private val socketFactory: SSLSocketFactory) : PcConnection {
+class PcClient(private val socketFactory: SSLSocketFactory, private val readTimeoutMs: Int = READ_TIMEOUT_MS) : PcConnection {
 
-    override fun post(endpoint: Endpoint, path: String, body: Cbor): PcResponse {
-        val payload = Cbor.encode(body)
-        val url = URI(SCHEME, null, endpoint.host, endpoint.port, path, null, null).toURL()
+    override fun send(request: PcRequest): PcResponse {
+        val endpoint = request.endpoint
+        val url = URI(SCHEME, null, endpoint.host, endpoint.port, request.path, request.query, null).toURL()
         val connection = url.openConnection() as HttpsURLConnection
         try {
             connection.sslSocketFactory = socketFactory
             connection.hostnameVerifier = PinnedKeyReplacesHostnameCheck
             connection.connectTimeout = CONNECT_TIMEOUT_MS
-            connection.readTimeout = READ_TIMEOUT_MS
-            connection.requestMethod = "POST"
-            connection.doOutput = true
-            connection.setRequestProperty("Content-Type", CBOR_TYPE)
+            connection.readTimeout = readTimeoutMs
             connection.setRequestProperty("Accept", CBOR_TYPE)
-            connection.setFixedLengthStreamingMode(payload.size)
-            connection.outputStream.use { it.write(payload) }
+            if (request.post) {
+                val payload = request.body?.let(Cbor::encode) ?: ByteArray(0)
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", CBOR_TYPE)
+                connection.setFixedLengthStreamingMode(payload.size)
+                connection.outputStream.use { it.write(payload) }
+            }
 
             val status = connection.responseCode
             val stream = if (status in SUCCESS_STATUS) connection.inputStream else connection.errorStream
@@ -73,12 +84,12 @@ class PcClient(private val socketFactory: SSLSocketFactory) : PcConnection {
         }
     }
 
-    private companion object {
-        const val SCHEME = "https"
-        const val CBOR_TYPE = "application/cbor"
-        const val CONNECT_TIMEOUT_MS = 5_000
+    companion object {
         const val READ_TIMEOUT_MS = 10_000
-        const val BUFFER_SIZE = 4096
-        const val MAX_RESPONSE_SIZE = 16 * 1024
+        private const val SCHEME = "https"
+        private const val CBOR_TYPE = "application/cbor"
+        private const val CONNECT_TIMEOUT_MS = 5_000
+        private const val BUFFER_SIZE = 4096
+        private const val MAX_RESPONSE_SIZE = 16 * 1024
     }
 }

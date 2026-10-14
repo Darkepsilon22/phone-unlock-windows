@@ -7,16 +7,18 @@ import androidx.compose.material3.Surface
 import androidx.fragment.app.FragmentActivity
 import dev.phoneunlock.pairing.PairingController
 import dev.phoneunlock.pairing.PairingScreen
+import dev.phoneunlock.unlock.UnlockController
 
 class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val controller = PairingController(this)
+        val pairing = PairingController(this)
+        val unlock = UnlockController(this)
         setContent {
             MaterialTheme {
                 Surface {
-                    PairingScreen(controller, this)
+                    PairingScreen(pairing, unlock, this)
                 }
             }
         }

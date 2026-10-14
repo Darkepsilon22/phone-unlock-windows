@@ -10,6 +10,15 @@ class PairingRecord(
     val pcName: String,
     val accountName: String,
 ) {
+    fun withPreferredEndpoint(endpoint: Endpoint): PairingRecord = PairingRecord(
+        pcId,
+        pcFingerprint,
+        pairingId,
+        (listOf(endpoint) + endpoints.filter { it != endpoint }).take(PairingQr.MAX_ENDPOINTS),
+        pcName,
+        accountName,
+    )
+
     fun encode(): ByteArray = Cbor.encode(
         Cbor.Object(
             mapOf(

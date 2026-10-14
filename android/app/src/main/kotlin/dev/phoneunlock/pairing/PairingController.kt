@@ -5,10 +5,8 @@ import android.provider.Settings
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import dev.phoneunlock.network.ClientIdentity
 import dev.phoneunlock.network.PcClient
-import dev.phoneunlock.network.PinnedServerTrust
-import dev.phoneunlock.network.Tls13SocketFactory
+import dev.phoneunlock.network.pinnedSocketFactory
 import dev.phoneunlock.security.AuthorizationKey
 import dev.phoneunlock.security.BiometricSigner
 import dev.phoneunlock.security.BiometricStatus
@@ -106,13 +104,9 @@ class PairingController(private val activity: FragmentActivity) {
     }
 
     private fun prepareExchange(qr: PairingQr): PairingExchange {
-        transportKey.ensureExists()
+        val socketFactory = pinnedSocketFactory(transportKey, qr.pcFingerprint)
         ensureAuthorizationKey()
         val certificate = transportKey.certificate()
-        val socketFactory = Tls13SocketFactory.create(
-            ClientIdentity(transportKey.privateKey(), certificate),
-            PinnedServerTrust(qr.pcFingerprint),
-        )
         val authorizationSpki = checkNotNull(authorizationKey.publicKey()) { "Clé d'autorisation absente" }.encoded
         return PairingExchange(qr, PcClient(socketFactory), certificate.publicKey.encoded, authorizationSpki)
     }
