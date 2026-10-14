@@ -59,7 +59,7 @@ La clé de signature de l'APK (`%USERPROFILE%\.phoneunlock\release.jks`, PKCS12,
 
 - **Hello uniquement** doit être désactivé sur le PC, sinon Windows refuse la connexion par mot de passe (`0xC000015B`, rapport L1).
 - Le mot de passe doit avoir servi **une fois en ligne** sur le PC pour que l'ouverture hors ligne fonctionne.
-- `provision` fait vérifier le mot de passe par Windows (`LogonUserW`, identité `MicrosoftAccount\adresse` lue par `NetUserGetInfo` niveau 24) avant de l'enregistrer, en ligne comme hors ligne. Chaque mot de passe erroné compte comme une tentative ratée pour Windows.
+- `provision` fait vérifier le mot de passe par Windows (`LogonUserW`, identité `MicrosoftAccount\adresse` lue par `NetUserGetInfo` niveau 24) avant de l'enregistrer, en ligne comme hors ligne. Chaque mot de passe erroné compte comme une tentative ratée pour Windows. `pair`, `revoke` et `history --clear` font la même vérification (F04, F12) : une session ouverte laissée sans surveillance ne suffit pas pour associer un téléphone, en retirer un ou effacer l'historique.
 - **Pixel 5** : plus de correctifs de sécurité depuis novembre 2023.
 - Le même Wi-Fi ne prouve pas la proximité. Un déverrouillage depuis le téléphone ouvre la session pour la personne devant le PC (D1).
 - BitLocker n'a pas été testé avec le produit : il a été désactivé dans la VM à cause des instantanés VirtualBox.

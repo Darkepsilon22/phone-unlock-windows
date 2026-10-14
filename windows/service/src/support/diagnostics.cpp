@@ -38,3 +38,10 @@ std::optional<RecordedError> Diagnostics::LastError() const
     std::lock_guard lock(mutex_);
     return lastError_;
 }
+
+void Diagnostics::Clear()
+{
+    std::lock_guard lock(mutex_);
+    lastUnlock_.reset();
+    lastError_.reset();
+}

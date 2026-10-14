@@ -4,7 +4,7 @@
 
 | Suite | Commande | Contenu | Dernier résultat |
 |---|---|---|---|
-| Service Windows | `scripts\build-windows.ps1` (CTest) | 92 tests : CBOR strict, SHA-256, ECDSA P-256, tuiles et autorisations à usage unique, stockage et révocation des associations, protocole et gestionnaire d'association, demandes de déverrouillage, état du PC, diagnostic | 92/92 le 14/10/2026 |
+| Service Windows | `scripts\build-windows.ps1` (CTest) | 99 tests : CBOR strict, SHA-256, ECDSA P-256, tuiles et autorisations à usage unique, stockage et révocation des associations, protocole et gestionnaire d'association, demandes de déverrouillage, état du PC, diagnostic, mise en forme de l'historique | 99/99 le 14/10/2026 |
 | Android | `android\gradlew.bat testDebugUnitTest` | 47 tests : CBOR strict, épinglage TLS, QR et échange d'association, enregistrement de l'association, demande d'autorisation et code de correspondance, signature DER vers `r‖s` | 47/47 le 14/10/2026 |
 
 Les tâches VS Code « Windows : compiler et tester » et « Android : tests unitaires » lancent ces suites. Les workflows GitHub Actions `windows-build.yml` et `android-build.yml` se déclenchent **manuellement** (onglet Actions), pour préserver le quota gratuit.
@@ -30,6 +30,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
 | Plantage du service (`Stop-Process -Force`) puis désinstallation complète et redémarrage | Écran de verrouillage normal, tuile « Service PhoneUnlock injoignable », PIN fonctionnel ; après désinstallation : service, tuile, DLL, liaison TLS, pare-feu et certificat absents, PIN fonctionnel | 14/10/2026 |
+| Identité et historique (F04, F12, F14) : `pair`, `revoke` et `history --clear` avec un mauvais puis le bon mot de passe ; `history` ; effacement puis nouveau déverrouillage par la tuile | Mauvais mot de passe : « Mot de passe refusé par Windows : rien n'a été modifié. » pour les trois ; bon : QR affiché, liste des téléphones, `OK` ; `history` en français (72 événements, 50 affichés) ; après effacement : « Historique effacé » seul, `status` remis à zéro, `cp.log` supprimé puis recréé ; puis demande depuis la tuile et « Session ouverte » | 14/10/2026 |
 | Dossiers de données (T20) : mise à jour, compte standard `testeur`, dossier pré-créé par ce compte, puis lien vers `C:\Users\Public` | `PhoneUnlock` : SYSTEM, Administrateurs, service `(RX)` ; `tile-logs` : SYSTEM, Administrateurs ; `cp.log` écrit dans `tile-logs`, session ouverte ; `testeur` : création et lecture refusées ; installation refusée (« n'a pas été créé par un administrateur », puis « est un lien »), sans service installé ; après suppression du lien, installation neuve normale | 14/10/2026 |
 | Diagnostic `status` : après mise à jour, déverrouillage réussi, demande expirée, service arrêté, terminal non élevé | Service, versions 0.1.0, adresse, « répond en TLS 1.3 », mot de passe et Pixel 5 ; « Pixel 5, réussi » ; « demande expirée (EXPIRED), Pixel 5 » ; « arrêté », HTTPS erreur 12029, « Service injoignable » ; sans élévation (`IsInRole` = `False`) : contrôles locaux affichés puis « Accès refusé » | 14/10/2026 |
 | APK release signé : `revoke` sur le PC, désinstallation de la version debug, installation de `PhoneUnlock-0.1.0.apk`, nouvelle association, déverrouillage | `apksigner verify` : schéma v3, signataire `CN=PhoneUnlock` ; `run-as` refusé (« package not debuggable ») ; une seule entrée dans `phones` ; session ouverte depuis l'application et depuis la tuile (`status=0x00000000`) | 14/10/2026 |
@@ -68,7 +69,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 2. Dans la VM, en administrateur : `PhoneUnlockService.exe pair --endpoint <IP de la VM>:47863`.
 3. Dans l'application : « Associer un PC », autoriser la caméra, scanner le QR.
 4. Le téléphone et la console affichent le même code à 6 chiffres. Répondre `o` sur le PC, puis « Le code est identique : confirmer » et poser le doigt.
-5. Preuves : la console affiche « Association enregistrée », `service.log` contient `pairing completed`, un fichier apparaît dans `C:\ProgramData\PhoneUnlock\state\pairings`, l'accueil de l'application affiche le PC et le compte.
+5. Preuves : la console affiche « Association enregistrée », `service.log` contient `history phone paired`, un fichier apparaît dans `C:\ProgramData\PhoneUnlock\state\pairings`, l'accueil de l'application affiche le PC et le compte.
 
 Cas d'échec (validés le 14/10/2026) : confirmer sur le téléphone avant le PC (message « Réponds d'abord o sur le PC »), répondre `n` sur le PC, annuler l'empreinte, scanner un QR expiré (plus de 5 minutes), scanner un autre QR code.
 

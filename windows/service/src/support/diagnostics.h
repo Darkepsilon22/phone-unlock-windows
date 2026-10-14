@@ -28,6 +28,7 @@ public:
     void RecordError(const std::string& phoneName, const std::string& code);
     std::optional<UnlockOutcome> LastUnlock() const;
     std::optional<RecordedError> LastError() const;
+    void Clear();
 
 private:
     WallClock unixSeconds_;

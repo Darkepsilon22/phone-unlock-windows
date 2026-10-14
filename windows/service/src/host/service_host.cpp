@@ -10,6 +10,7 @@
 #include "session/account_name.h"
 #include "session/session_monitor.h"
 #include "pipe_io.h"
+#include "product_paths.h"
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -23,9 +24,6 @@ using pipe_protocol::PayloadWriter;
 
 namespace
 {
-constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlock\\logs";
-constexpr wchar_t ServiceLogFile[] = L"service.log";
-constexpr wchar_t ConsoleLogFile[] = L"console.log";
 constexpr wchar_t SecretsDirectory[] = L"%ProgramData%\\PhoneUnlock\\secrets";
 constexpr wchar_t StateDirectory[] = L"%ProgramData%\\PhoneUnlock\\state";
 constexpr wchar_t PairingsDirectory[] = L"%ProgramData%\\PhoneUnlock\\state\\pairings";
@@ -170,7 +168,7 @@ void RunService(HANDLE stop)
 
 int RunAsService()
 {
-    ConfigureLog(LogDirectory, ServiceLogFile);
+    ConfigureLog(product_paths::LogDirectory, product_paths::ServiceLogFile);
     SERVICE_TABLE_ENTRYW table[] = {
         { const_cast<LPWSTR>(pipe_protocol::ServiceName), ServiceMain },
         { nullptr, nullptr },
@@ -180,7 +178,7 @@ int RunAsService()
 
 int RunInConsole()
 {
-    ConfigureLog(LogDirectory, ConsoleLogFile);
+    ConfigureLog(product_paths::LogDirectory, product_paths::ConsoleLogFile);
     serviceStopEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     if (!serviceStopEvent)
     {

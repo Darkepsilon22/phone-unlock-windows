@@ -1,7 +1,8 @@
 #include "admin/admin_commands.h"
-#include "admin/account_password.h"
+#include "admin/account_check.h"
 #include "admin/console.h"
 #include "admin/current_user.h"
+#include "admin/history_command.h"
 #include "admin/pair_command.h"
 #include "admin/phones_command.h"
 #include "admin/status_command.h"
@@ -18,41 +19,14 @@ namespace
 {
 int Provision()
 {
-    const std::optional<std::wstring> sid = CurrentUserSid();
-    if (!sid)
+    const std::optional<ConfirmedAccount> account = ConfirmAccountPassword();
+    if (!account)
     {
         return exit_code::Failure;
     }
-    const std::optional<LogonName> name = LogonNameFor(*sid);
-    if (!name)
-    {
-        fwprintf(stderr, L"Nom de connexion du compte introuvable.\n");
-        return exit_code::Failure;
-    }
-    fwprintf(stdout, L"Compte %s\\%s\nMot de passe du compte (il ne s'affiche pas) : ", name->domain.c_str(),
-        name->user.c_str());
-    const std::optional<SecureString> password = ReadHiddenLine();
-    if (!password)
-    {
-        fwprintf(stderr, L"Mot de passe vide ou trop long.\n");
-        return exit_code::Failure;
-    }
-
-    const DWORD verification = VerifyAccountPassword(*name, *password);
-    if (verification == ERROR_LOGON_FAILURE)
-    {
-        fwprintf(stderr, L"Mot de passe refusé par Windows : rien n'a été enregistré.\n");
-        return exit_code::Failure;
-    }
-    if (verification != NO_ERROR)
-    {
-        fwprintf(stderr, L"Vérification impossible (erreur %lu) : rien n'a été enregistré.\n", verification);
-        return exit_code::Failure;
-    }
-
     PayloadWriter request;
-    request.WriteString(*sid);
-    request.WriteString(password->c_str(), password->length());
+    request.WriteString(account->sid);
+    request.WriteString(account->password.c_str(), account->password.length());
     return SendAndReport(MessageType::Provision, request);
 }
 
@@ -90,7 +64,8 @@ int Usage()
         L"  PhoneUnlockService pair [--endpoint hôte:port]  associe un téléphone au compte courant\n"
         L"  PhoneUnlockService phones                       liste les téléphones associés\n"
         L"  PhoneUnlockService revoke                       retire un téléphone associé\n"
-        L"  PhoneUnlockService status                       affiche l'état et la dernière erreur\n");
+        L"  PhoneUnlockService status                       affiche l'état et la dernière erreur\n"
+        L"  PhoneUnlockService history [--clear]            affiche ou efface l'historique\n");
 #ifdef PHONEUNLOCK_TEST_COMMANDS
     fwprintf(stdout, L"  PhoneUnlockService authorize [--delay N]        (test) simule l'autorisation du téléphone\n");
 #endif
@@ -124,6 +99,10 @@ int RunAdminCommand(int argc, wchar_t** argv)
     if (command == L"status")
     {
         return RunStatusCommand();
+    }
+    if (command == L"history")
+    {
+        return RunHistoryCommand(argc - 1, argv + 1);
     }
 #ifdef PHONEUNLOCK_TEST_COMMANDS
     if (command == L"authorize")

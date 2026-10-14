@@ -48,6 +48,15 @@ TEST(LatestErrorReplacesThePreviousOne)
     CHECK(fixture.diagnostics.LastError()->unixSeconds == 1'760'000'060);
 }
 
+TEST(ClearingForgetsUnlockAndError)
+{
+    Fixture fixture;
+    fixture.diagnostics.RecordUnlock("Pixel 5", WrongPassword);
+    fixture.diagnostics.Clear();
+    CHECK(!fixture.diagnostics.LastUnlock());
+    CHECK(!fixture.diagnostics.LastError());
+}
+
 TEST(SuccessDoesNotEraseAnEarlierError)
 {
     Fixture fixture;

@@ -33,7 +33,7 @@ std::optional<std::vector<pairing_protocol::Endpoint>> ParseEndpoints(const std:
 }
 
 AdminRequests::AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingStore& pairings,
-    const Diagnostics& diagnostics, PairingManager* pairing)
+    Diagnostics& diagnostics, PairingManager* pairing)
     : secrets_(secrets), tiles_(tiles), pairings_(pairings), diagnostics_(diagnostics), pairing_(pairing)
 {
 }
@@ -59,6 +59,8 @@ PayloadWriter AdminRequests::Handle(const Message& request)
         return RevokePhone(request);
     case MessageType::Status:
         return Status(request);
+    case MessageType::ClearHistory:
+        return ClearHistory(request);
     default:
         return ResultOnly(E_INVALIDARG);
     }
@@ -217,4 +219,15 @@ PayloadWriter AdminRequests::Status(const Message& request)
         return ResultOnly(E_OUTOFMEMORY);
     }
     return reply;
+}
+
+PayloadWriter AdminRequests::ClearHistory(const Message& request)
+{
+    if (!request.payload.empty())
+    {
+        return ResultOnly(E_INVALIDARG);
+    }
+    diagnostics_.Clear();
+    LogLine(L"history log cleared");
+    return ResultOnly(S_OK);
 }

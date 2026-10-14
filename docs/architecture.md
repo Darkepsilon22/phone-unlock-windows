@@ -17,7 +17,7 @@
                               ┌────────────▼────────────┐    ┌────────────▼────────────┐
                               │ PhoneUnlockProtoCP.dll  │    │ PhoneUnlockService.exe  │
                               │ tuile dans LogonUI      │    │ provision, pair, phones,│
-                              │ (Credential Provider)   │    │ revoke, status, console │
+                              │ (Credential Provider)   │    │ revoke, status, history │
                               └────────────┬────────────┘    └─────────────────────────┘
                                            │ KERB_INTERACTIVE_UNLOCK_LOGON
                                            ▼
@@ -77,7 +77,10 @@ Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à t
 | `StartPairing` (7), `PairingStatus` (8), `ConfirmPairing` (9) | SID et adresses ; rien ; décision | QR ; étape, code, nom du téléphone ; — |
 | `ListPhones` (12) | — | nombre, puis identifiant, SID, nom et date de chaque association |
 | `RevokePhone` (13) | identifiant d'association | — |
+| `ClearHistory` (15) | — | — ; le service oublie le dernier déverrouillage et la dernière erreur, puis écrit `history log cleared` |
 | `Status` (14) | SID du compte courant | mot de passe enregistré (0 ou 1, sans déchiffrement), noms des téléphones du compte, dernier déverrouillage (date, téléphone, statut Windows), dernière erreur (date, téléphone, code du protocole) ; chaînes vides si rien depuis le démarrage du service |
+
+`provision`, `pair`, `revoke` et `history --clear` font d'abord vérifier le mot de passe du compte par Windows (`LogonUserW`) : une session ouverte laissée sans surveillance ne suffit pas pour associer un téléphone, en retirer un ou effacer l'historique. `history` lit les lignes `history` de `service.log` ; `history --clear` supprime `service.log`, `console.log` et `cp.log`, puis envoie `ClearHistory`.
 
 `status` complète ces données par des contrôles faits sans le service : état et type de démarrage auprès du gestionnaire de services, versions des fichiers installés, enregistrement de la tuile, adresses locales, et une requête `GET /v1/` vers `127.0.0.1:47863` en TLS 1.3 sans certificat client. Cette requête ne transporte aucun secret et ne vérifie pas le certificat du PC ; une réponse `404` prouve que le service répond en TLS 1.3.
 

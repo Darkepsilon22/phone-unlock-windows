@@ -1,10 +1,9 @@
 #include "provider.h"
+#include "product_paths.h"
 #include <algorithm>
 
 namespace
 {
-constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlock\\tile-logs";
-constexpr wchar_t LogFileName[] = L"cp.log";
 constexpr ULONGLONG PendingLogonLifetime = 30'000;
 
 bool IsSupported(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario)
@@ -42,7 +41,7 @@ Provider::~Provider()
 HRESULT Provider::CreateInstance(REFIID riid, void** object)
 {
     *object = nullptr;
-    ConfigureLog(LogDirectory, LogFileName);
+    ConfigureLog(product_paths::TileLogDirectory, product_paths::TileLogFile);
     auto* provider = new (std::nothrow) Provider();
     if (!provider)
     {

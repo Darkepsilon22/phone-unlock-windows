@@ -70,7 +70,7 @@ Si Play Protect avertit, choisir d'installer quand même ; ne pas le désactiver
 & "C:\Program Files\PhoneUnlock\PhoneUnlockService.exe" pair --endpoint <adresse du PC>:47863
 ```
 
-L'adresse est affichée par `status`. Dans l'application : « Associer un PC », scanner le QR (valable 5 minutes), vérifier que le code à 6 chiffres est **identique** sur les deux écrans, répondre `o` sur le PC, puis confirmer avec l'empreinte.
+La commande demande d'abord le mot de passe du compte, vérifié par Windows. L'adresse est affichée par `status`. Dans l'application : « Associer un PC », scanner le QR (valable 5 minutes), vérifier que le code à 6 chiffres est **identique** sur les deux écrans, répondre `o` sur le PC, puis confirmer avec l'empreinte.
 
 ### Vérifier
 
@@ -99,7 +99,7 @@ L'adresse est affichée par `status`. Dans l'application : « Associer un PC »,
 & "C:\Program Files\PhoneUnlock\PhoneUnlockService.exe" revoke
 ```
 
-`revoke` affiche la liste numérotée, demande le numéro puis une confirmation. Le téléphone est refusé immédiatement. En cas de perte ou de vol, le faire au plus vite : l'empreinte reste exigée à chaque demande, mais la révocation supprime tout risque.
+`revoke` demande le mot de passe du compte, affiche la liste numérotée, puis demande le numéro et une confirmation. Le téléphone est refusé immédiatement. En cas de perte ou de vol, le faire au plus vite : l'empreinte reste exigée à chaque demande, mais la révocation supprime tout risque.
 
 ## 6. Diagnostic
 
@@ -115,7 +115,7 @@ L'adresse est affichée par `status`. Dans l'application : « Associer un PC »,
 | Serveur HTTPS | Requête locale en TLS 1.3, sans secret ; « ne répond pas » si le service est arrêté ou le port occupé |
 | Mot de passe enregistré | « non » : lancer `provision` |
 | Téléphones associés | Téléphones de ton compte |
-| Dernier déverrouillage, dernière erreur | Depuis le démarrage du service seulement |
+| Dernier déverrouillage, dernière erreur | Depuis le démarrage du service ou le dernier `history --clear` |
 
 | Code de la dernière erreur | Signification | Que faire |
 |---|---|---|
@@ -135,6 +135,15 @@ Journaux, sans aucun secret :
 | `C:\ProgramData\PhoneUnlock\tile-logs\cp.log` | Tuile ; codes renvoyés par Windows (`result status=…`) |
 
 Ne jamais désactiver Defender, le pare-feu, BitLocker ou l'authentification Windows pour faire fonctionner PhoneUnlock. Si quelqu'un propose de l'aide, il n'a besoin ni de ton mot de passe, ni de ton PIN, ni de ton empreinte ; une intervention à distance demande ton accord explicite.
+
+### Historique
+
+```powershell
+& "C:\Program Files\PhoneUnlock\PhoneUnlockService.exe" history
+& "C:\Program Files\PhoneUnlock\PhoneUnlockService.exe" history --clear
+```
+
+`history` affiche les 50 derniers événements : associations, demandes, autorisations, refus avec leur code, résultats de Windows, retraits de téléphone. `history --clear` demande le mot de passe du compte et une confirmation, puis efface les journaux du service et de la tuile ; le nouvel historique commence par « Historique effacé ».
 
 ## 7. Désinstaller
 

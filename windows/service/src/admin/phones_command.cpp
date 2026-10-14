@@ -1,4 +1,5 @@
 #include "admin/phones_command.h"
+#include "admin/account_check.h"
 #include "admin/console.h"
 #include "admin/service_client.h"
 #include <cstdio>
@@ -95,6 +96,10 @@ int RunPhonesCommand()
 
 int RunRevokeCommand()
 {
+    if (!ConfirmAccountPassword())
+    {
+        return exit_code::Failure;
+    }
     const std::optional<std::vector<Phone>> phones = ListPhones();
     if (!phones)
     {

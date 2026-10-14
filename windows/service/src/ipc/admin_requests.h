@@ -9,7 +9,7 @@
 class AdminRequests
 {
 public:
-    AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingStore& pairings, const Diagnostics& diagnostics,
+    AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingStore& pairings, Diagnostics& diagnostics,
         PairingManager* pairing);
 
     pipe_protocol::PayloadWriter Handle(const pipe_protocol::Message& request);
@@ -23,10 +23,11 @@ private:
     pipe_protocol::PayloadWriter ListPhones();
     pipe_protocol::PayloadWriter RevokePhone(const pipe_protocol::Message& request);
     pipe_protocol::PayloadWriter Status(const pipe_protocol::Message& request);
+    pipe_protocol::PayloadWriter ClearHistory(const pipe_protocol::Message& request);
 
     const SecretStore& secrets_;
     LogonTiles& tiles_;
     PairingStore& pairings_;
-    const Diagnostics& diagnostics_;
+    Diagnostics& diagnostics_;
     PairingManager* pairing_;
 };

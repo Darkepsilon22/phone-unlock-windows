@@ -1,6 +1,6 @@
 #include "admin/pair_command.h"
+#include "admin/account_check.h"
 #include "admin/console.h"
-#include "admin/current_user.h"
 #include "admin/local_endpoints.h"
 #include "admin/qr_console.h"
 #include "admin/service_client.h"
@@ -140,19 +140,19 @@ int FollowPairing()
 
 int RunPairCommand(int argc, wchar_t** argv)
 {
-    const std::optional<std::wstring> sid = CurrentUserSid();
     const std::vector<std::wstring> endpoints = RequestedEndpoints(argc, argv);
-    if (!sid)
-    {
-        return exit_code::Failure;
-    }
     if (endpoints.empty())
     {
         fwprintf(stderr, L"Aucune adresse réseau utilisable : précise --endpoint adresse:port.\n");
         return exit_code::Failure;
     }
+    const std::optional<ConfirmedAccount> account = ConfirmAccountPassword();
+    if (!account)
+    {
+        return exit_code::Failure;
+    }
 
-    const std::optional<std::wstring> qr = StartPairing(*sid, endpoints);
+    const std::optional<std::wstring> qr = StartPairing(account->sid, endpoints);
     if (!qr)
     {
         return exit_code::Failure;

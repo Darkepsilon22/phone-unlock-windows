@@ -1,10 +1,13 @@
 find_package(unofficial-nayuki-qr-code-generator CONFIG REQUIRED)
 
 add_library(PhoneUnlockServiceCore STATIC
+    src/admin/account_check.cpp
     src/admin/account_password.cpp
     src/admin/admin_commands.cpp
     src/admin/console.cpp
     src/admin/current_user.cpp
+    src/admin/history_command.cpp
+    src/admin/history_format.cpp
     src/admin/local_endpoints.cpp
     src/admin/pair_command.cpp
     src/admin/phones_command.cpp
@@ -60,6 +63,7 @@ add_executable(PhoneUnlockServiceTests
     tests/change_feed_tests.cpp
     tests/crypto_tests.cpp
     tests/diagnostics_tests.cpp
+    tests/history_format_tests.cpp
     tests/logon_tiles_tests.cpp
     tests/pairing_manager_tests.cpp
     tests/pairing_protocol_tests.cpp

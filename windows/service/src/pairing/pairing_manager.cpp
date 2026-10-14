@@ -226,7 +226,7 @@ HttpResponse PairingManager::HandlePairConfirm(const HttpRequest& request)
 
     session_.stage = PairingStage::Completed;
     session_.token.assign(session_.token.size(), 0);
-    LogLine(L"pairing completed");
+    LogLine(L"history phone paired phone=%s", WideFromUtf8(pairing.phoneName).c_str());
     return api_errors::Body(cbor::Object({ { StateField, cbor::Text(PairedState) } }));
 }
 
