@@ -28,18 +28,18 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 
 | Menace | État | Mesures |
 |---|---|---|
-| S01 rejeu | Partiel | Autorisation à usage unique et 30 s (fait) ; nonce et contexte signés (lot 2b) |
+| S01 rejeu | Fait (mode téléphone) | `request_id` et nonce aléatoires signés, 30 s monotones, consommation unique, une demande active par compte ; rejeu refusé (tests et VM) |
 | S02 usurpation | Partiel | Empreintes épinglées, TLS 1.3 mutuel, code à 6 chiffres (côté PC fait, non validé en VM) |
 | S03 téléphone perdu | Partiel | Biométrie par opération (validée sur Pixel 5) ; révocation à réaliser |
-| S04 commande forgée | À faire | Signature vérifiée par le PC (lot 2b) |
-| S05 mauvais compte | Partiel | Autorisation liée au SID ; `context_id` à réaliser |
+| S04 commande forgée | Fait (mode téléphone) | Signature ECDSA vérifiée par le PC sur la demande qu'il reconstruit lui-même ; champ modifié ou signature falsifiée refusés (tests) |
+| S05 mauvais compte | Fait (mode téléphone) | SID et `context_id` de la tuile signés et revérifiés ; un nouvel écran de verrouillage invalide la demande (tests) |
 | S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret |
 | S07 détournement de l'IPC | Fait | Deux canaux à ACL distinctes, vérification du serveur par la tuile, échec fermé si le descripteur de sécurité ne peut pas être construit |
-| S08 saturation | Partiel | 16 Ko, 8 requêtes simultanées, 3 essais d'association ; quotas par compte à réaliser |
+| S08 saturation | Fait | 16 Ko, 8 requêtes simultanées, 3 essais d'association, 3 demandes de déverrouillage par minute et par compte (VM) |
 | S09 mise à jour malveillante | À faire | Signature des paquets (lot L5) |
 | S10 nouvelle biométrie | Fait | Clé invalidée à l'enrôlement (Android) |
 | S11 blocage du PC | Partiel | Fournisseurs Windows conservés et tuile sans appel bloquant (constaté en VM) ; désinstallation et plantage du service pas encore testés |
-| S12 mauvaise demande | Partiel | Voir D1 ; noms signés et historique à réaliser |
+| S12 mauvaise demande | Partiel | Mode téléphone : tuile du compte affichée exigée, noms du PC et du compte signés et montrés avant l'empreinte, historique dans `service.log` (lignes `history`). Mode tuile (code à 4 chiffres) : lot 2b-2 |
 
 ## Conditions et limites connues
 

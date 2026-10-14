@@ -19,7 +19,9 @@
 - chaque déverrouillage par téléphone est inscrit à l'historique du PC ;
 - quotas inchangés (3 demandes par minute).
 
-**Vérifié dans la VM le 13/10/2026** : la soumission automatique par la tuile (`CredentialsChanged` puis connexion automatique avec le crédential par défaut) fonctionne depuis l'écran de verrouillage, session ouverte en moins d'une seconde. Le mode téléphone lui-même (bouton dans l'application) reste à réaliser.
+**Vérifié dans la VM le 13/10/2026** : la soumission automatique par la tuile (`CredentialsChanged` puis connexion automatique avec le crédential par défaut) fonctionne depuis l'écran de verrouillage, session ouverte en moins d'une seconde. 
+
+**Vérifié dans la VM le 14/10/2026** : déverrouillage depuis le bouton de l'application, en écran de verrouillage et juste après le démarrage du PC ; empreinte annulée, quota et expiration refusés. Windows 11 présente la tuile de l'écran de verrouillage en scénario de connexion (`CPUS_LOGON`) : l'état « verrouillé » combine la tuile et la notification de verrouillage. Le compte virtuel du service ne peut pas énumérer les sessions (WTS, erreur 259) : le service suit les notifications de session.
 
 ## D2 : état du PC en temps réel (13/10/2026)
 

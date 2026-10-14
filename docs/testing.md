@@ -29,6 +29,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Mêmes cas sans réseau | Rapport L1, complément | 13/10/2026 |
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
+| Déverrouillage depuis l'application : écran de verrouillage et écran de connexion après redémarrage ; empreinte annulée, 4ᵉ demande en une minute, plus de 30 s avant l'empreinte | Session ouverte (`history unlock result … status=0x00000000`), puis messages « Empreinte non confirmée », « Trop de demandes », « Demande expirée » sans ouverture | 14/10/2026 |
 | Vérification du mot de passe par `provision` : mauvais refusé, bon accepté, en ligne et VM débranchée | « Mot de passe refusé par Windows », puis `OK` | 14/10/2026 |
 | Association de bout en bout avec le Pixel 5 (code identique des deux côtés, confirmation sur le PC puis par empreinte) | Console « Association enregistrée », `pairing.cbor` créé sur le téléphone | 14/10/2026 |
 | Cas d'échec de l'association : téléphone avant le PC, refus sur le PC, empreinte annulée, QR expiré, QR étranger | Messages attendus sur le téléphone et la console, aucune association enregistrée | 14/10/2026 |
@@ -41,6 +42,8 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 4. `service.log` doit contenir `https server listening`.
 
 ### Procédures à exécuter
+
+**Déverrouillage sans connexion** (à faire) : même Wi-Fi sans accès Internet ; point d'accès du téléphone avec données mobiles coupées (le PC doit s'y connecter dès l'écran de verrouillage, l'application doit le retrouver sur le réseau du point d'accès).
 
 **Association avec le téléphone (VM et Pixel 5)**
 1. Téléphone sur le même Wi-Fi que la VM. Installer l'application : `android\gradlew.bat installDebug`.
