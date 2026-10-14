@@ -7,6 +7,8 @@ $target = Join-Path $env:windir 'System32\PhoneUnlockProtoCP.dll'
 Remove-Item "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\$clsid" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "HKLM:\SOFTWARE\Classes\CLSID\$clsid" -Recurse -Force -ErrorAction SilentlyContinue
 
+Get-ChildItem "$target.*.old" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+
 try {
     Remove-Item $target -Force
     'Désinstallé.'
