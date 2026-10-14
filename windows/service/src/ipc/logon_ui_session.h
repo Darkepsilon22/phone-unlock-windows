@@ -16,6 +16,7 @@ public:
 private:
     bool WaitAndSendReady(HANDLE pipe, const pipe_protocol::Message& wait, HANDLE stopEvent);
     void AnswerTileRequest(HANDLE pipe, const pipe_protocol::Message& request, HANDLE stopEvent);
+    void CancelTileRequest(HANDLE pipe, const pipe_protocol::Message& request, HANDLE stopEvent);
     bool SendReady(HANDLE pipe, const std::wstring& sid, const SecureString& password, HANDLE stopEvent);
 
     const SecretStore& secrets_;

@@ -62,7 +62,7 @@ Credential::~Credential()
 }
 
 HRESULT Credential::Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
-    UnlockRequester requester, Credential** credential)
+    UnlockRequester requester, UnlockCanceller canceller, Credential** credential)
 {
     *credential = nullptr;
     auto* instance = new (std::nothrow) Credential();
@@ -70,7 +70,7 @@ HRESULT Credential::Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredent
     {
         return E_OUTOFMEMORY;
     }
-    const HRESULT hr = instance->Initialize(scenario, user, std::move(requester));
+    const HRESULT hr = instance->Initialize(scenario, user, std::move(requester), std::move(canceller));
     if (FAILED(hr))
     {
         instance->Release();
@@ -81,10 +81,11 @@ HRESULT Credential::Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredent
 }
 
 HRESULT Credential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
-    UnlockRequester requester)
+    UnlockRequester requester, UnlockCanceller canceller)
 {
     scenario_ = scenario;
     requestUnlock_ = std::move(requester);
+    cancelUnlock_ = std::move(canceller);
     GUID accountProvider = GUID_NULL;
     HRESULT hr = user->GetStringValue(PKEY_Identity_QualifiedUserName, &qualifiedUserName_);
     if (SUCCEEDED(hr))
@@ -157,6 +158,12 @@ IFACEMETHODIMP Credential::SetSelected(BOOL* autoLogon)
 
 IFACEMETHODIMP Credential::SetDeselected()
 {
+    if (requestShown_ && cancelUnlock_)
+    {
+        requestShown_ = false;
+        cancelUnlock_(Sid());
+        ShowStatus(L"");
+    }
     return S_OK;
 }
 
@@ -235,6 +242,7 @@ IFACEMETHODIMP Credential::CommandLinkClicked(DWORD fieldId)
         return E_INVALIDARG;
     }
     ShowStatus(requestUnlock_(Sid()).c_str());
+    requestShown_ = true;
     return S_OK;
 }
 

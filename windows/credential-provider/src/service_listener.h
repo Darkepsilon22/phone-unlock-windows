@@ -26,6 +26,7 @@ public:
 
     void ReportResult(const std::wstring& sid, LONG status, LONG subStatus);
     std::wstring RequestUnlock(const std::wstring& sid);
+    void CancelUnlock(const std::wstring& sid);
 
     const std::vector<std::wstring>& Sids() const;
 

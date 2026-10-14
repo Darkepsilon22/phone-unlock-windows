@@ -10,9 +10,10 @@ class Credential final : public ICredentialProviderCredential2
 public:
     using ResultReporter = std::function<void(NTSTATUS status, NTSTATUS subStatus)>;
     using UnlockRequester = std::function<std::wstring(const std::wstring& sid)>;
+    using UnlockCanceller = std::function<void(const std::wstring& sid)>;
 
     static HRESULT Create(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
-        UnlockRequester requester, Credential** credential);
+        UnlockRequester requester, UnlockCanceller canceller, Credential** credential);
 
     std::wstring Sid() const;
     void ArmAutoLogon(SecureString password, ResultReporter reporter);
@@ -50,7 +51,7 @@ private:
     ~Credential();
 
     HRESULT Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO scenario, ICredentialProviderUser* user,
-        UnlockRequester requester);
+        UnlockRequester requester, UnlockCanceller canceller);
     HRESULT Serialize(PCWSTR protectedPassword, CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* serialization) const;
     void ShowStatus(PCWSTR text);
 
@@ -64,4 +65,6 @@ private:
     SecureString autoLogonPassword_;
     ResultReporter reportResult_;
     UnlockRequester requestUnlock_;
+    UnlockCanceller cancelUnlock_;
+    bool requestShown_ = false;
 };

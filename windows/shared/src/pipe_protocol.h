@@ -31,9 +31,10 @@ enum class MessageType : uint16_t
     RevokePhone = 13,
     Status = 14,
     ClearHistory = 15,
+    CancelUnlock = 16,
 };
 
-constexpr MessageType LastMessageType = MessageType::ClearHistory;
+constexpr MessageType LastMessageType = MessageType::CancelUnlock;
 constexpr size_t ContextIdSize = 16;
 
 enum class TileRequestOutcome : int32_t

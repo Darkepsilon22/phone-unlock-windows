@@ -136,6 +136,23 @@ std::wstring ServiceListener::RequestUnlock(const std::wstring& sid)
     return StatusFor(static_cast<pipe_protocol::TileRequestOutcome>(outcome), code);
 }
 
+void ServiceListener::CancelUnlock(const std::wstring& sid)
+{
+    HANDLE pipe = Connect();
+    if (pipe == INVALID_HANDLE_VALUE)
+    {
+        return;
+    }
+    PayloadWriter request;
+    if (request.WriteString(sid) && request.WriteBytes(context_.data(), context_.size()) &&
+        pipe_protocol::WriteMessage(pipe, MessageType::CancelUnlock, request.Bytes(), stopEvent_))
+    {
+        pipe_protocol::ReadMessage(pipe, stopEvent_);
+    }
+    CloseHandle(pipe);
+    LogLine(L"unlock request from tile cancelled");
+}
+
 const std::vector<std::wstring>& ServiceListener::Sids() const
 {
     return sids_;

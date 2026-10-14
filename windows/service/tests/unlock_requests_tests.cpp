@@ -394,4 +394,39 @@ TEST(NoActiveRequestMeansNoContent)
     fixture.PhonePairing().pairingId = cbor::Bytes(16, 9);
     CHECK(fixture.Requests().Active(fixture.PhonePairing()).status == 204);
 }
+
+TEST(LeavingTheTileCancelsItsRequest)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    fixture.RequestFromTile();
+    const uint64_t before = fixture.Changes().Version();
+    fixture.Requests().CancelFromTile(Alice, fixture.Tiles().Find(Alice)->context);
+    CHECK(fixture.Changes().Version() > before);
+    CHECK(fixture.Requests().Active(fixture.PhonePairing()).status == 204);
+    const HttpResponse late = fixture.Prove();
+    CHECK(late.status == 410);
+    CHECK(UnlockFixture::ErrorCode(late) == "CANCELLED");
+    CHECK(fixture.Diagnosis().LastError()->code == "CANCELLED");
+}
+
+TEST(LeavingTheTileKeepsAPhoneRequest)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    fixture.Create();
+    fixture.Requests().CancelFromTile(Alice, fixture.Tiles().Find(Alice)->context);
+    CHECK(fixture.Prove().status == 200);
+}
+
+TEST(CancelFromAnotherScreenIsIgnored)
+{
+    UnlockFixture fixture;
+    fixture.ShowTile();
+    fixture.RequestFromTile();
+    ContextId other = {};
+    other.fill(0xEE);
+    fixture.Requests().CancelFromTile(Alice, other);
+    CHECK(fixture.Prove().status == 200);
+}
 }

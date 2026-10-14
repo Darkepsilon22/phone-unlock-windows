@@ -83,6 +83,7 @@ TileRequest UnlockRequests::CreateFromTile(const std::wstring& sid, const Contex
         return { TileRequest::Outcome::WrongContext, {} };
     }
     std::string code = unlock_protocol::MatchCode(entry->request);
+    entry->fromTile = true;
     if (!Store(sid, std::move(*entry)))
     {
         return { TileRequest::Outcome::RateLimited, {} };
@@ -90,6 +91,21 @@ TileRequest UnlockRequests::CreateFromTile(const std::wstring& sid, const Contex
     LogLine(L"history unlock requested from tile for phone=%s", WideFromUtf8(pairing->phoneName).c_str());
     changes_.Notify();
     return { TileRequest::Outcome::Created, std::move(code) };
+}
+
+void UnlockRequests::CancelFromTile(const std::wstring& sid, const ContextId& context)
+{
+    {
+        std::lock_guard lock(mutex_);
+        const auto match = active_.find(sid);
+        if (match == active_.end() || !match->second.fromTile || match->second.stage != Stage::Presented ||
+            match->second.request.context != context)
+        {
+            return;
+        }
+        Terminate(match->second, Gone, "CANCELLED");
+    }
+    changes_.Notify();
 }
 
 HttpResponse UnlockRequests::Active(const Pairing& pairing)

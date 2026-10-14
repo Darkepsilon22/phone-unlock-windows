@@ -89,6 +89,11 @@ void LogonUiSession::Serve(HANDLE pipe, Message message, HANDLE stopEvent)
             AnswerTileRequest(pipe, message, stopEvent);
             return;
         }
+        else if (message.type == MessageType::CancelUnlock)
+        {
+            CancelTileRequest(pipe, message, stopEvent);
+            return;
+        }
         else
         {
             return;
@@ -163,4 +168,16 @@ void LogonUiSession::AnswerTileRequest(HANDLE pipe, const Message& request, HAND
     {
         pipe_protocol::WriteMessage(pipe, MessageType::UnlockCode, reply.Bytes(), stopEvent);
     }
+}
+
+void LogonUiSession::CancelTileRequest(HANDLE pipe, const Message& request, HANDLE stopEvent)
+{
+    std::wstring sid;
+    std::optional<ContextId> context;
+    PayloadReader reader(request.payload);
+    if (reader.ReadString(&sid) && (context = ReadContext(reader)) && reader.AtEnd())
+    {
+        requests_.CancelFromTile(sid, *context);
+    }
+    pipe_protocol::WriteMessage(pipe, MessageType::Ack, {}, stopEvent);
 }

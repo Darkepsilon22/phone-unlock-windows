@@ -35,6 +35,7 @@ public:
 
     HttpResponse Create(const Pairing& pairing);
     TileRequest CreateFromTile(const std::wstring& sid, const ContextId& context);
+    void CancelFromTile(const std::wstring& sid, const ContextId& context);
     HttpResponse Active(const Pairing& pairing);
     HttpResponse Prove(const Pairing& pairing, const cbor::Bytes& requestId, const cbor::Bytes& body);
     HttpResponse Result(const Pairing& pairing, const cbor::Bytes& requestId, std::chrono::milliseconds wait);
@@ -59,6 +60,7 @@ private:
         ULONGLONG deadline = 0;
         Stage stage = Stage::Presented;
         const char* error = nullptr;
+        bool fromTile = false;
     };
 
     static bool IsFinal(Stage stage);

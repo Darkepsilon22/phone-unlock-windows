@@ -259,6 +259,10 @@ const wchar_t* ErrorText(const std::wstring& code)
     {
         return L"demande expirée";
     }
+    if (code == L"CANCELLED")
+    {
+        return L"demande annulée : la tuile a été quittée";
+    }
     if (code == L"WRONG_CONTEXT")
     {
         return L"écran de verrouillage changé pendant la demande";

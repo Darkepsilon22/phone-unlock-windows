@@ -61,6 +61,8 @@ Aucune dépendance circulaire : la tuile et le service ne se connaissent qu'à t
 4. La tuile appelle `CredentialsChanged`, se désigne crédential par défaut avec connexion automatique, sérialise une seule fois, puis efface le mot de passe.
 5. Windows rend son verdict (`ReportResult`), que la tuile renvoie au service (`Result`).
 
+Depuis la tuile, le lien « Demander au téléphone » envoie `RequestUnlock` (10), qui renvoie le code de correspondance (`UnlockCode`, 11) ; quitter la tuile envoie `CancelUnlock` (16), qui termine sa demande avec `CANCELLED`.
+
 ### Association
 
 1. `PhoneUnlockService pair` demande au service une session : jeton aléatoire de 256 bits, valable 5 minutes. Le QR contient l'identité du PC et les adresses.
