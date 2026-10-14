@@ -26,6 +26,7 @@ public:
     HttpResponse Prove(const Pairing& pairing, const cbor::Bytes& requestId, const cbor::Bytes& body);
     HttpResponse Result(const Pairing& pairing, const cbor::Bytes& requestId, std::chrono::milliseconds wait);
     void ReportLogonResult(const std::wstring& sid, LONG status);
+    void Close();
 
 private:
     enum class Stage
@@ -64,4 +65,5 @@ private:
     std::condition_variable changed_;
     std::map<std::wstring, Entry> active_;
     std::map<std::wstring, std::deque<ULONGLONG>> creations_;
+    bool closed_ = false;
 };

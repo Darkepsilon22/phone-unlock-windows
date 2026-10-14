@@ -21,6 +21,20 @@ TEST(ChangeFeedTimesOutWithoutChange)
     CHECK(feed.WaitForChange(current, 10ms) == current);
 }
 
+TEST(ClosedChangeFeedStopsWaiting)
+{
+    ChangeFeed feed;
+    const uint64_t current = feed.Version();
+    std::thread closer([&feed] {
+        std::this_thread::sleep_for(20ms);
+        feed.Close();
+    });
+    const auto started = std::chrono::steady_clock::now();
+    CHECK(feed.WaitForChange(current, 10s) == current);
+    CHECK(std::chrono::steady_clock::now() - started < 5s);
+    closer.join();
+}
+
 TEST(ChangeFeedWakesWaitersOnNotify)
 {
     ChangeFeed feed;

@@ -136,7 +136,7 @@ HttpResponse UnlockRequests::Result(const Pairing& pairing, const cbor::Bytes& r
     }
     changed_.wait_for(lock, wait, [this, &pairing, &requestId] {
         const Entry* current = EntryFor(pairing, requestId);
-        return !current || IsFinal(current->stage);
+        return closed_ || !current || IsFinal(current->stage);
     });
     entry = EntryFor(pairing, requestId);
     return entry ? StageBody(*entry) : api_errors::Error(Gone, "CANCELLED");
@@ -156,6 +156,15 @@ void UnlockRequests::ReportLogonResult(const std::wstring& sid, LONG status)
         entry.error = status == 0 ? nullptr : "WINDOWS_REJECTED";
         LogLine(L"history unlock result phone=%s status=0x%08X", WideFromUtf8(entry.phoneName).c_str(),
             static_cast<unsigned>(status));
+    }
+    changed_.notify_all();
+}
+
+void UnlockRequests::Close()
+{
+    {
+        std::lock_guard lock(mutex_);
+        closed_ = true;
     }
     changed_.notify_all();
 }

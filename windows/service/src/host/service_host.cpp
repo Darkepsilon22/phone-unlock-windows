@@ -158,6 +158,8 @@ void RunService(HANDLE stop)
     }
 
     logonUiServer.Run(stop);
+    changes.Close();
+    unlockRequests.Close();
     for (std::thread& server : servers)
     {
         server.join();
