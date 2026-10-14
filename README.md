@@ -13,7 +13,7 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 | [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
 | [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
 | [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
-| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D9) |
+| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D10) |
 | [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
 
 ## Structure

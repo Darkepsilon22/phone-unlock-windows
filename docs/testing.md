@@ -44,6 +44,8 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 ### Procédures à exécuter
 
+**Mode tuile (VM et Pixel 5)** : verrouiller la VM, choisir la tuile Téléphone, cliquer « Demander au téléphone » ; la tuile affiche « Code NNNN » ; ouvrir PhoneUnlock, vérifier que le même code s'affiche, autoriser avec l'empreinte ; la session s'ouvre. Cas d'échec : « Refuser » (rien ne s'ouvre), plus de 60 s (demande expirée), quatre demandes en une minute (« Trop de demandes »).
+
 **Wi-Fi sans Internet, données mobiles du téléphone actives** (à faire) : Android peut alors faire passer les connexions par les données mobiles ; vérifier que l'application joint toujours le PC sur le Wi-Fi.
 
 **PC réel sur le point d'accès dès l'écran de verrouillage** (à faire sur le PC principal, lot L6) : le réseau du point d'accès doit être connu pour tous les utilisateurs.

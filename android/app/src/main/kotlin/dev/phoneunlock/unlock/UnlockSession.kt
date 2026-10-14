@@ -17,6 +17,14 @@ class UnlockSession(private val connection: PcConnection, private val pairing: P
     fun request(endpoint: Endpoint): AuthorizationRequest =
         AuthorizationRequest.parse(checked(connection.send(PcRequest(endpoint, UNLOCK_PATH, post = true))), pairing)
 
+    fun active(endpoint: Endpoint): AuthorizationRequest? {
+        val response = connection.send(PcRequest(endpoint, ACTIVE_PATH, post = false))
+        if (response.status == NO_CONTENT) {
+            return null
+        }
+        return AuthorizationRequest.parse(checked(response), pairing)
+    }
+
     fun prove(endpoint: Endpoint, request: AuthorizationRequest, rawSignature: ByteArray): String {
         val proof = Cbor.Object(mapOf(1L to Cbor.ByteString(request.requestId), 2L to Cbor.ByteString(rawSignature)))
         return stateOf(connection.send(PcRequest(endpoint, requestPath(request, PROOF_SUFFIX), post = true, body = proof)))
@@ -46,6 +54,8 @@ class UnlockSession(private val connection: PcConnection, private val pairing: P
         private const val STATE_PATH = "/v1/state"
         private const val UNLOCK_PATH = "/v1/unlock"
         private const val REQUESTS_PREFIX = "/v1/requests/"
+        private const val ACTIVE_PATH = "/v1/requests/active"
+        private const val NO_CONTENT = 204
         private const val PROOF_SUFFIX = "/proof"
         private const val RESULT_SUFFIX = "/result"
         private const val STATE_FIELD = 1L

@@ -3,6 +3,8 @@ package dev.phoneunlock.unlock
 import dev.phoneunlock.encoding.Cbor
 import dev.phoneunlock.pairing.PairingProtocol
 import dev.phoneunlock.pairing.PairingRecord
+import java.security.MessageDigest
+import java.util.Locale
 
 class AuthorizationRequest private constructor(private val fields: Map<Long, Cbor>) {
 
@@ -14,6 +16,12 @@ class AuthorizationRequest private constructor(private val fields: Map<Long, Cbo
 
     val accountName: String get() = displayText(fields.getValue(ACCOUNT_NAME_FIELD))
 
+    fun matchCode(): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(Cbor.encode(Cbor.Object(fields)))
+        val value = ((digest[0].toInt() and 0xFF) shl Byte.SIZE_BITS) or (digest[1].toInt() and 0xFF)
+        return String.format(Locale.ROOT, "%04d", value % MATCH_CODE_MODULUS)
+    }
+
     fun signedMessage(): ByteArray =
         DOMAIN.toByteArray(Charsets.US_ASCII) + 0.toByte() + Cbor.encode(Cbor.Object(fields + (DECISION_FIELD to ALLOW)))
 
@@ -21,6 +29,7 @@ class AuthorizationRequest private constructor(private val fields: Map<Long, Cbo
         const val ACTION_LOGON = 1L
         const val ACTION_UNLOCK = 2L
         private const val DOMAIN = "PhoneUnlock-v1-authorize"
+        private const val MATCH_CODE_MODULUS = 10_000
         private const val VERSION_FIELD = 1L
         private const val ACTION_FIELD = 2L
         private const val REQUEST_ID_FIELD = 3L

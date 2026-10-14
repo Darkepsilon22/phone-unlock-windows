@@ -76,3 +76,11 @@ L'application affiche l'état du PC tant qu'elle est ouverte : verrouillé, sess
 **Décision** : le jeton du QR d'association reste valable 5 minutes au lieu de 120 secondes.
 
 **Raison** : en 2 minutes, il fallait scanner, comparer le code, répondre sur le PC puis poser le doigt ; c'était trop court en pratique. Le risque ajouté est faible : le jeton n'est visible que sur l'écran du PC, il est à usage unique, limité à 3 essais, et l'association exige toujours la comparaison du code à 6 chiffres, la confirmation sur le PC et l'empreinte.
+
+## D10 : demande depuis la tuile valable 60 secondes (14/10/2026)
+
+**Décision** : une demande créée par le lien « Demander au téléphone » de la tuile expire après 60 secondes ; une demande créée depuis l'application garde 30 secondes.
+
+**Raison** : l'application ne tourne pas en arrière-plan (cahier des charges, D2). Après le clic sur la tuile, il faut prendre le téléphone, ouvrir l'application, comparer le code puis poser le doigt. Le risque ajouté est faible : la demande reste à usage unique, liée au `context_id` de cet écran, protégée par le code de correspondance et l'empreinte.
+
+**Autre changement** : la tuile n'a plus de champ mot de passe. Le PIN, le mot de passe et Windows Hello restent disponibles avec les tuiles de Windows.

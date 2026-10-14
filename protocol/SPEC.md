@@ -111,10 +111,10 @@ pair-tbs = "PhoneUnlock-v1-pair-confirm" ‖ 0x00 ‖ transcript
 
 Deux déclencheurs créent une demande (décision D1, [docs/decisions.md](../docs/decisions.md)) :
 
-- **Tuile** : bouton « Demander » sur la tuile Windows, `action = 1` ou `2` selon le scénario.
+- **Tuile** : lien « Demander au téléphone » sur la tuile Windows, `action = 1` ou `2` selon le scénario. La tuile affiche le code de correspondance (§4.3) ; l'application, prévenue par l'attente longue de l'état (§4bis), lit la demande par `GET /v1/requests/active`.
 - **Téléphone** : `POST /v1/unlock`, corps vide. Le service crée la demande **uniquement** si l'état courant est `locked` ou `logon_screen` et si la tuile du compte associé est affichée ; sinon `WRONG_CONTEXT`. La réponse est directement l'`authorization-request` du §4.2.
 
-Dans les deux cas, le service génère `request_id` (16 octets) et `nonce` (32 octets) par CSPRNG, enregistre l'instant de création sur son **horloge monotone** et fixe l'expiration à **30 secondes**. Une seule demande active par compte ; une nouvelle demande annule la précédente.
+Dans les deux cas, le service génère `request_id` (16 octets) et `nonce` (32 octets) par CSPRNG, enregistre l'instant de création sur son **horloge monotone** et fixe l'expiration à **30 secondes**, ou **60 secondes** pour une demande venue de la tuile (décision D10). Une seule demande active par compte ; une nouvelle demande annule la précédente.
 
 ### 4.2 Récupération par le téléphone
 

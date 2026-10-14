@@ -38,6 +38,23 @@ class UnlockProtocolTest {
     }
 
     @Test
+    fun matchCodeMatchesWindowsReferenceVector() {
+        assertEquals("3880", AuthorizationRequest.parse(referenceBody(), pairing).matchCode())
+    }
+
+    @Test
+    fun activeRequestIsReadOrAbsent() {
+        val none = UnlockSession(PcConnection { PcResponse(204, null) }, pairing)
+        assertEquals(null, none.active(endpoint))
+
+        var seen: PcRequest? = null
+        val pending = UnlockSession(PcConnection { request -> seen = request; PcResponse(200, referenceBody()) }, pairing)
+        assertEquals("3880", pending.active(endpoint)?.matchCode())
+        assertEquals("/v1/requests/active", seen?.path)
+        assertFalse(seen?.post ?: true)
+    }
+
+    @Test
     fun requestFromAnotherPcOrPairingIsRejected() {
         assertRejected(referenceBody(5L to Cbor.ByteString(filled(16, 7))))
         assertRejected(referenceBody(6L to Cbor.ByteString(filled(16, 7))))

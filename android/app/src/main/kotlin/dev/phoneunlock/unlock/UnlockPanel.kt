@@ -15,8 +15,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -38,6 +41,8 @@ fun UnlockPanel(controller: UnlockController, record: PairingRecord, lifecycleOw
         }
     }
 
+    state.pending?.let { PendingCard(it, controller::approvePending, controller::refusePending) }
+
     when (val progress = state.progress) {
         is UnlockProgress.Working -> {
             CircularProgressIndicator()
@@ -50,6 +55,31 @@ fun UnlockPanel(controller: UnlockController, record: PairingRecord, lifecycleOw
 
     Button(onClick = controller::unlock, enabled = state.canUnlock, modifier = Modifier.fillMaxWidth()) {
         Text("Déverrouiller")
+    }
+}
+
+@Composable
+private fun PendingCard(pending: PendingRequest, onApprove: () -> Unit, onRefuse: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Demande du PC ${pending.request.pcName}", fontWeight = FontWeight.Bold)
+            Text("Compte Windows : ${pending.request.accountName}")
+            Text("Vérifie que la tuile affiche ce code :")
+            Text(
+                pending.code,
+                fontSize = 40.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(onClick = onApprove, modifier = Modifier.fillMaxWidth()) {
+                Text("Le code est identique : autoriser")
+            }
+            OutlinedButton(onClick = onRefuse, modifier = Modifier.fillMaxWidth()) {
+                Text("Refuser")
+            }
+        }
     }
 }
 

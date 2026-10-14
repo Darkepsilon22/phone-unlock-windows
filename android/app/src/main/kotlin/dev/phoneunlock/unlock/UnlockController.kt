@@ -31,11 +31,14 @@ sealed interface UnlockProgress {
     data class Failed(val message: String) : UnlockProgress
 }
 
+class PendingRequest(val request: AuthorizationRequest, val code: String)
+
 data class UnlockUiState(
     val status: PcStatus? = null,
     val reachable: Boolean = false,
     val searching: Boolean = true,
     val progress: UnlockProgress = UnlockProgress.Idle,
+    val pending: PendingRequest? = null,
 ) {
     val canUnlock: Boolean
         get() = reachable && status?.unlockAvailable == true && progress !is UnlockProgress.Working
@@ -57,6 +60,9 @@ class UnlockController(private val activity: FragmentActivity) {
     @Volatile
     private var link: Link? = null
 
+    @Volatile
+    private var refusedRequestId: ByteArray? = null
+
     val state: StateFlow<UnlockUiState> = mutableState.asStateFlow()
 
     suspend fun watch(record: PairingRecord) {
@@ -74,7 +80,8 @@ class UnlockController(private val activity: FragmentActivity) {
             try {
                 val status = withContext(Dispatchers.IO) { current.watch.state(target, version) }
                 version = status.version
-                mutableState.update { it.copy(status = status, reachable = true, searching = false) }
+                val pending = if (status.unlockAvailable) withContext(Dispatchers.IO) { pendingFor(current, target) } else null
+                mutableState.update { it.copy(status = status, reachable = true, searching = false, pending = pending) }
             } catch (lost: IOException) {
                 endpoint = null
                 version = 0L
@@ -93,10 +100,30 @@ class UnlockController(private val activity: FragmentActivity) {
         if (!mutableState.value.canUnlock) {
             return
         }
+        authorize(current, target) { current.action.request(target) }
+    }
+
+    fun approvePending() {
+        val current = link ?: return
+        val target = endpoint ?: return
+        val pending = mutableState.value.pending ?: return
+        authorize(current, target) { pending.request }
+    }
+
+    fun refusePending() {
+        refusedRequestId = mutableState.value.pending?.request?.requestId
+        mutableState.update { it.copy(pending = null) }
+    }
+
+    private fun authorize(current: Link, target: Endpoint, obtain: () -> AuthorizationRequest) {
+        if (mutableState.value.progress is UnlockProgress.Working) {
+            return
+        }
+        mutableState.update { it.copy(pending = null) }
         activity.lifecycleScope.launch {
             try {
                 showProgress("Demande au PC…")
-                val request = withContext(Dispatchers.IO) { current.action.request(target) }
+                val request = withContext(Dispatchers.IO) { obtain() }
                 showProgress("Confirme avec ton empreinte…")
                 val prompt = SigningPrompt("Déverrouiller ${request.pcName}", "Compte Windows : ${request.accountName}")
                 val signature = signer.sign(authorizationKey.signatureForOneOperation(), request.signedMessage(), prompt)
@@ -112,6 +139,25 @@ class UnlockController(private val activity: FragmentActivity) {
                 mutableState.update { it.copy(progress = UnlockProgress.Failed(describe(failure))) }
             }
         }
+    }
+
+    private fun pendingFor(current: Link, target: Endpoint): PendingRequest? {
+        if (mutableState.value.progress is UnlockProgress.Working) {
+            return null
+        }
+        val request = try {
+            current.action.active(target)
+        } catch (unreachable: IOException) {
+            null
+        } catch (refused: UnlockFailure) {
+            null
+        } catch (malformed: IllegalArgumentException) {
+            null
+        } ?: return null
+        if (refusedRequestId?.contentEquals(request.requestId) == true) {
+            return null
+        }
+        return PendingRequest(request, request.matchCode())
     }
 
     fun dismissResult() {
