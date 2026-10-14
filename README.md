@@ -27,7 +27,7 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 | `windows/credential-provider/` | Tuile Windows (DLL COM chargée par LogonUI) |
 | `windows/service/` | Service Windows : coffre, association, API HTTPS, commandes d'administration, tests |
 | `protocol/` | Spécification du protocole |
-| `scripts/` | Compilation Windows, signature de l'APK, installeur, désinstalleur, essais de robustesse |
+| `scripts/` | Compilation Windows, signature de l'APK, installeur, désinstalleur, essais de robustesse et de performance |
 | `docs/` | Documentation |
 
 ## Prérequis (gratuits)

@@ -30,6 +30,7 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 | Soumission automatique depuis le service | `automatic=1` puis `status=0x00000000` | 13/10/2026 |
 | Clé StrongBox, signature biométrique, refus sans empreinte, annulation | Application de diagnostic sur Pixel 5 | 13/10/2026 |
 | Plantage du service (`Stop-Process -Force`) puis désinstallation complète et redémarrage | Écran de verrouillage normal, tuile « Service PhoneUnlock injoignable », PIN fonctionnel ; après désinstallation : service, tuile, DLL, liaison TLS, pare-feu et certificat absents, PIN fonctionnel | 14/10/2026 |
+| Protection LSA activée dans la VM (`RunAsPPL=2`, comme sur le PC principal) puis performance : `scripts\recette-performance.ps1 -Since <heure> -IdleSeconds 600` | « LSASS.exe a démarré en tant que processus protégé avec le niveau : 4 » ; 7 déverrouillages sur 7 réussis ; preuve acceptée → résultat Windows : médiane 300 ms, maximum 1 005 ms (cible 3 s au 95e percentile) ; au repos pendant 10 minutes : processeur 0,005 % (cible < 1 %), mémoire privée 2 Mo (cible < 100 Mo). Écarts : 7 essais au lieu de 100 ; affichage de la demande sur le téléphone non chronométré | 14/10/2026 |
 | Réseau coupé pendant une demande (T10) : câble de la VM débranché avant l'empreinte, rebranché ensuite | Rien ne s'ouvre ; l'ancienne preuve, arrivée après la reconnexion, est refusée (`EXPIRED`, 19:10:05) ; une nouvelle demande avec une nouvelle empreinte est nécessaire (session ouverte à 19:10:09) | 14/10/2026 |
 | Mise en pause de la VM pendant 2 minutes, écran verrouillé (T06, en VM) | Après reprise, nouvelle demande depuis l'application et session ouverte (19:13:23 à 19:13:25). La vraie veille du PC reste à vérifier sur le PC principal | 14/10/2026 |
 | Changement d'heure (T23) | **Non vérifié en VM** : les Additions invité de VirtualBox remettent l'heure aussitôt. Couvert par les tests automatiques (durée mesurée par l'horloge monotone du PC) ; les demandes ne sont gardées qu'en mémoire et ne survivent pas à un redémarrage | 14/10/2026 |
@@ -66,6 +67,8 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 
 **Robustesse (VM)** : `powershell -ExecutionPolicy Bypass -File recette-robustesse.ps1` en administrateur ; pendant la charge, verrouiller puis ouvrir la session avec le PIN, puis déverrouiller avec l'application. Le script compare chaque réponse à l'attendu et vérifie que le processus du service n'a pas changé.
+
+**Performance (VM)** : noter l'heure, faire les déverrouillages, puis `powershell -ExecutionPolicy Bypass -File recette-performance.ps1 -Since <heure> -IdleSeconds 600` en administrateur, sans toucher la VM pendant la mesure au repos.
 
 **Installeur (VM)** : prendre un instantané, puis `install.ps1` sur l'installation existante (mise à jour), `uninstall.ps1` et redémarrage, puis contrôle de l'absence du service, des fichiers, des clés `{512D55BA-…}`, du certificat, de la règle de pare-feu (`Get-NetFirewallRule -DisplayName 'PhoneUnlock*'`), de la liaison TLS et de la réservation d'URL (`netsh http show sslcert` et `urlacl`). Échec provoqué : dans une autre fenêtre, `$l = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Any, 47863); $l.Start()`, puis `install.ps1` doit tout annuler.
 
