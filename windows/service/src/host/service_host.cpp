@@ -127,7 +127,7 @@ void RunService(HANDLE stop)
 
     UnlockRequests unlockRequests(tiles, pairings, changes, pcId, pcName, AccountDisplayName);
     LogonUiSession logonUiSession(secrets, tiles, unlockRequests);
-    AdminRequests adminRequests(secrets, tiles, pairing ? &*pairing : nullptr);
+    AdminRequests adminRequests(secrets, tiles, pairings, pairing ? &*pairing : nullptr);
     PipeServer logonUiServer(PipeRole::LogonUi, [&logonUiSession](HANDLE pipe, Message first, HANDLE connectionStop) {
         logonUiSession.Serve(pipe, std::move(first), connectionStop);
     });

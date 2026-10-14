@@ -45,4 +45,58 @@ TEST(PairingsSurviveRestart)
     CHECK(found->authorizationSpki == pairing.authorizationSpki);
     CHECK(found->createdAt == pairing.createdAt);
 }
+
+TEST(PairingTheSamePhoneAgainReplacesThePreviousPairing)
+{
+    test_support::TemporaryDirectory directory;
+    Pairing first = SamplePairing();
+    Pairing second = SamplePairing();
+    second.pairingId = cbor::Bytes(16, 0xCD);
+    second.createdAt = first.createdAt + 60;
+    {
+        PairingStore store(directory.Path());
+        CHECK(SUCCEEDED(store.Save(first)));
+        CHECK(SUCCEEDED(store.Save(second)));
+        CHECK(store.Count() == 1);
+        CHECK(store.FindByTransport(second.transportFingerprint)->pairingId == second.pairingId);
+    }
+    PairingStore reloaded(directory.Path());
+    CHECK(reloaded.Count() == 1);
+    CHECK(reloaded.FindByTransport(second.transportFingerprint)->pairingId == second.pairingId);
+}
+
+TEST(AnotherPhoneKeepsItsOwnPairing)
+{
+    test_support::TemporaryDirectory directory;
+    PairingStore store(directory.Path());
+    Pairing other = SamplePairing();
+    other.pairingId = cbor::Bytes(16, 0xCD);
+    other.transportFingerprint.fill(0x43);
+    CHECK(SUCCEEDED(store.Save(SamplePairing())));
+    CHECK(SUCCEEDED(store.Save(other)));
+    CHECK(store.Count() == 2);
+}
+
+TEST(RevokedPairingIsGoneEvenAfterRestart)
+{
+    test_support::TemporaryDirectory directory;
+    const Pairing pairing = SamplePairing();
+    {
+        PairingStore store(directory.Path());
+        CHECK(SUCCEEDED(store.Save(pairing)));
+        CHECK(SUCCEEDED(store.Remove(pairing.pairingId)));
+        CHECK(!store.FindByTransport(pairing.transportFingerprint).has_value());
+        CHECK(!store.FindByAccount(pairing.accountSid).has_value());
+        CHECK(store.All().empty());
+    }
+    PairingStore reloaded(directory.Path());
+    CHECK(reloaded.Count() == 0);
+}
+
+TEST(RevokingAnUnknownPairingFails)
+{
+    test_support::TemporaryDirectory directory;
+    PairingStore store(directory.Path());
+    CHECK(store.Remove(cbor::Bytes(16, 0x01)) == HRESULT_FROM_WIN32(ERROR_NOT_FOUND));
+}
 }

@@ -92,6 +92,7 @@ private fun Outcome(message: String, onDismiss: () -> Unit) {
 }
 
 private fun statusLabel(state: UnlockUiState): String = when {
+    state.revoked -> "Ce téléphone n'est plus associé à ce PC. Associe-le à nouveau."
     state.reachable -> when (state.status?.session) {
         SessionState.LOCKED -> if (state.status.unlockAvailable) "Verrouillé" else "Verrouillé (écran en veille ?)"
         SessionState.LOGON_SCREEN -> if (state.status.unlockAvailable) "Écran de connexion" else "Démarrage en cours"

@@ -127,6 +127,12 @@ class UnlockProtocolTest {
     }
 
     @Test
+    fun revokedPhoneIsReportedAsSuch() {
+        val revoked = UnlockSession(PcConnection { PcResponse(403, Cbor.Object(mapOf(1L to Cbor.Text("REVOKED")))) }, pairing)
+        assertEquals("REVOKED", assertThrows(UnlockFailure::class.java) { revoked.state(endpoint, 0) }.code)
+    }
+
+    @Test
     fun stateRequestCarriesTheKnownVersion() {
         var seen: PcRequest? = null
         val session = UnlockSession(PcConnection { request -> seen = request; PcResponse(200, statusBody("signed_in", false)) }, pairing)

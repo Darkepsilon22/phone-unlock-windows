@@ -24,6 +24,8 @@ public:
     explicit PairingStore(std::wstring directory);
 
     HRESULT Save(const Pairing& pairing);
+    HRESULT Remove(const cbor::Bytes& pairingId);
+    std::vector<Pairing> All();
     std::optional<Pairing> FindByTransport(const crypto::Digest& fingerprint);
     std::optional<Pairing> FindByAccount(const std::wstring& sid);
     size_t Count();

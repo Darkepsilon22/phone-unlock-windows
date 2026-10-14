@@ -44,6 +44,37 @@ std::wstring HexFromBytes(std::span<const uint8_t> bytes)
     return hex;
 }
 
+std::optional<std::vector<uint8_t>> BytesFromHex(std::wstring_view hex)
+{
+    const auto value = [](wchar_t digit) -> int {
+        if (digit >= L'0' && digit <= L'9')
+        {
+            return digit - L'0';
+        }
+        if (digit >= L'a' && digit <= L'f')
+        {
+            return digit - L'a' + 10;
+        }
+        return -1;
+    };
+    if (hex.size() % 2 != 0)
+    {
+        return std::nullopt;
+    }
+    std::vector<uint8_t> bytes;
+    for (size_t index = 0; index < hex.size(); index += 2)
+    {
+        const int high = value(hex[index]);
+        const int low = value(hex[index + 1]);
+        if (high < 0 || low < 0)
+        {
+            return std::nullopt;
+        }
+        bytes.push_back(static_cast<uint8_t>((high << 4) | low));
+    }
+    return bytes;
+}
+
 std::string Base64Url(std::span<const uint8_t> bytes)
 {
     static constexpr char Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";

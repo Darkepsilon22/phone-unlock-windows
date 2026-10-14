@@ -45,6 +45,8 @@ Non couverts automatiquement : `http.sys`, les canaux locaux, LogonUI, DPAPI et 
 
 ### Procédures à exécuter
 
+**Révocation (VM et Pixel 5)** : `PhoneUnlockService.exe phones` liste le téléphone ; `revoke`, choisir le numéro, confirmer ; l'application affiche « Ce téléphone n'est plus associé à ce PC » ; la tuile répond « Aucun téléphone associé » ; nouvelle association, puis déverrouillage de nouveau possible.
+
 **Mode tuile (VM et Pixel 5)** : verrouiller la VM, choisir la tuile Téléphone, cliquer « Demander au téléphone » ; la tuile affiche « Code NNNN » ; ouvrir PhoneUnlock, vérifier que le même code s'affiche, autoriser avec l'empreinte ; la session s'ouvre. Reste à vérifier : quatre demandes en une minute (« Trop de demandes » sur la tuile).
 
 **Wi-Fi sans Internet, données mobiles du téléphone actives** (à faire) : Android peut alors faire passer les connexions par les données mobiles ; vérifier que l'application joint toujours le PC sur le Wi-Fi.

@@ -27,9 +27,11 @@ enum class MessageType : uint16_t
     ConfirmPairing = 9,
     RequestUnlock = 10,
     UnlockCode = 11,
+    ListPhones = 12,
+    RevokePhone = 13,
 };
 
-constexpr MessageType LastMessageType = MessageType::UnlockCode;
+constexpr MessageType LastMessageType = MessageType::RevokePhone;
 constexpr size_t ContextIdSize = 16;
 
 enum class TileRequestOutcome : int32_t

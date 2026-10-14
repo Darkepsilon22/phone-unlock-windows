@@ -8,7 +8,7 @@
 class AdminRequests
 {
 public:
-    AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingManager* pairing);
+    AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingStore& pairings, PairingManager* pairing);
 
     pipe_protocol::PayloadWriter Handle(const pipe_protocol::Message& request);
 
@@ -18,8 +18,11 @@ private:
     pipe_protocol::PayloadWriter StartPairing(const pipe_protocol::Message& request);
     pipe_protocol::PayloadWriter QueryPairingStatus();
     pipe_protocol::PayloadWriter ConfirmPairing(const pipe_protocol::Message& request);
+    pipe_protocol::PayloadWriter ListPhones();
+    pipe_protocol::PayloadWriter RevokePhone(const pipe_protocol::Message& request);
 
     const SecretStore& secrets_;
     LogonTiles& tiles_;
+    PairingStore& pairings_;
     PairingManager* pairing_;
 };

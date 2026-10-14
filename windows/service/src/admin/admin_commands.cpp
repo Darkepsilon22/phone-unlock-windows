@@ -3,6 +3,7 @@
 #include "admin/console.h"
 #include "admin/current_user.h"
 #include "admin/pair_command.h"
+#include "admin/phones_command.h"
 #include "admin/service_client.h"
 #include "host/service_host.h"
 #include <cstdio>
@@ -85,7 +86,9 @@ int Usage()
         L"Utilisation :\n"
         L"  PhoneUnlockService console                      exécute le service au premier plan\n"
         L"  PhoneUnlockService provision                    enregistre le mot de passe du compte courant\n"
-        L"  PhoneUnlockService pair [--endpoint hôte:port]  associe un téléphone au compte courant\n");
+        L"  PhoneUnlockService pair [--endpoint hôte:port]  associe un téléphone au compte courant\n"
+        L"  PhoneUnlockService phones                       liste les téléphones associés\n"
+        L"  PhoneUnlockService revoke                       retire un téléphone associé\n");
 #ifdef PHONEUNLOCK_TEST_COMMANDS
     fwprintf(stdout, L"  PhoneUnlockService authorize [--delay N]        (test) simule l'autorisation du téléphone\n");
 #endif
@@ -107,6 +110,14 @@ int RunAdminCommand(int argc, wchar_t** argv)
     if (command == L"pair")
     {
         return RunPairCommand(argc - 1, argv + 1);
+    }
+    if (command == L"phones")
+    {
+        return RunPhonesCommand();
+    }
+    if (command == L"revoke")
+    {
+        return RunRevokeCommand();
     }
 #ifdef PHONEUNLOCK_TEST_COMMANDS
     if (command == L"authorize")

@@ -104,6 +104,11 @@ pair-tbs = "PhoneUnlock-v1-pair-confirm" ‖ 0x00 ‖ transcript
 - Jeton valable 5 minutes (décision D9), usage unique, **3 essais** maximum puis invalidation.
 - Une association lie : `pairing_id`, `fp(transport)`, clé d'autorisation, `pc_id`, **SID du compte** choisi dans l'assistant.
 - Une empreinte inconnue ou différente **NE DOIT JAMAIS** remplacer silencieusement une association existante. Changer de téléphone impose une nouvelle association.
+- Une nouvelle association du **même** téléphone (même `fp(transport)`), confirmée par le code et l'empreinte, remplace l'ancienne.
+
+### 3.5 Révocation
+
+Un administrateur du PC retire un téléphone (`PhoneUnlockService revoke`). L'association est supprimée immédiatement : toute requête de ce téléphone reçoit `REVOKED`, y compris une preuve pour une demande en cours. L'application affiche alors que le téléphone n'est plus associé et propose une nouvelle association. La révocation est inscrite à l'historique du PC.
 
 ## 4. Demande d'autorisation
 

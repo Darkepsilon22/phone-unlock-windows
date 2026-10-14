@@ -32,8 +32,9 @@ std::optional<std::vector<pairing_protocol::Endpoint>> ParseEndpoints(const std:
 }
 }
 
-AdminRequests::AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingManager* pairing)
-    : secrets_(secrets), tiles_(tiles), pairing_(pairing)
+AdminRequests::AdminRequests(const SecretStore& secrets, LogonTiles& tiles, PairingStore& pairings,
+    PairingManager* pairing)
+    : secrets_(secrets), tiles_(tiles), pairings_(pairings), pairing_(pairing)
 {
 }
 
@@ -52,6 +53,10 @@ PayloadWriter AdminRequests::Handle(const Message& request)
         return QueryPairingStatus();
     case MessageType::ConfirmPairing:
         return ConfirmPairing(request);
+    case MessageType::ListPhones:
+        return ListPhones();
+    case MessageType::RevokePhone:
+        return RevokePhone(request);
     default:
         return ResultOnly(E_INVALIDARG);
     }
@@ -144,4 +149,35 @@ PayloadWriter AdminRequests::ConfirmPairing(const Message& request)
         return ResultOnly(E_INVALIDARG);
     }
     return ResultOnly(pairing_->ConfirmOnPc(accepted != 0) ? S_OK : E_ILLEGAL_STATE_CHANGE);
+}
+
+PayloadWriter AdminRequests::ListPhones()
+{
+    const std::vector<Pairing> pairings = pairings_.All();
+    PayloadWriter reply;
+    bool written = reply.WriteInt32(S_OK) && reply.WriteInt32(static_cast<int32_t>(pairings.size()));
+    for (const Pairing& pairing : pairings)
+    {
+        written = written && reply.WriteString(HexFromBytes(pairing.pairingId)) && reply.WriteString(pairing.accountSid) &&
+            reply.WriteString(WideFromUtf8(pairing.phoneName)) && reply.WriteString(std::to_wstring(pairing.createdAt));
+    }
+    if (!written)
+    {
+        return ResultOnly(E_OUTOFMEMORY);
+    }
+    return reply;
+}
+
+PayloadWriter AdminRequests::RevokePhone(const Message& request)
+{
+    PayloadReader reader(request.payload);
+    std::wstring hex;
+    if (!reader.ReadString(&hex) || !reader.AtEnd())
+    {
+        return ResultOnly(E_INVALIDARG);
+    }
+    const std::optional<std::vector<uint8_t>> pairingId = BytesFromHex(hex);
+    const HRESULT hr = pairingId ? pairings_.Remove(*pairingId) : E_INVALIDARG;
+    LogLine(L"history phone revoked hr=0x%08X", static_cast<unsigned>(hr));
+    return ResultOnly(hr);
 }

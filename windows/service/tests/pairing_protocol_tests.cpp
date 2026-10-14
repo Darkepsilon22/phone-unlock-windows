@@ -91,4 +91,13 @@ TEST(ConfirmationMessageIsDomainSeparated)
     CHECK(std::string_view(reinterpret_cast<const char*>(message.data()), Domain.size()) == Domain);
     CHECK(message[Domain.size()] == 0);
 }
+
+TEST(HexRoundTripsAndRejectsMalformedText)
+{
+    const cbor::Bytes bytes = { 0x00, 0x7F, 0xAB, 0xFF };
+    CHECK(BytesFromHex(HexFromBytes(bytes)) == bytes);
+    CHECK(!BytesFromHex(L"abc").has_value());
+    CHECK(!BytesFromHex(L"zz").has_value());
+    CHECK(!BytesFromHex(L"AB").has_value());
+}
 }

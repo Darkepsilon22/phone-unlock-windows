@@ -39,9 +39,10 @@ data class UnlockUiState(
     val searching: Boolean = true,
     val progress: UnlockProgress = UnlockProgress.Idle,
     val pending: PendingRequest? = null,
+    val revoked: Boolean = false,
 ) {
     val canUnlock: Boolean
-        get() = reachable && status?.unlockAvailable == true && progress !is UnlockProgress.Working
+        get() = reachable && !revoked && status?.unlockAvailable == true && progress !is UnlockProgress.Working
 }
 
 class UnlockController(private val activity: FragmentActivity) {
@@ -81,15 +82,18 @@ class UnlockController(private val activity: FragmentActivity) {
                 val status = withContext(Dispatchers.IO) { current.watch.state(target, version) }
                 version = status.version
                 val pending = if (status.unlockAvailable) withContext(Dispatchers.IO) { pendingFor(current, target) } else null
-                mutableState.update { it.copy(status = status, reachable = true, searching = false, pending = pending) }
+                mutableState.update {
+                    it.copy(status = status, reachable = true, searching = false, pending = pending, revoked = false)
+                }
             } catch (lost: IOException) {
                 endpoint = null
                 version = 0L
                 mutableState.update { it.copy(reachable = false, searching = true) }
                 delay(RETRY_DELAY_MS)
             } catch (refused: UnlockFailure) {
-                mutableState.update { it.copy(reachable = false, searching = false) }
-                delay(RETRY_DELAY_MS)
+                val revoked = refused.code == REVOKED
+                mutableState.update { it.copy(reachable = revoked, searching = false, revoked = revoked, pending = null) }
+                delay(if (revoked) REVOKED_RETRY_DELAY_MS else RETRY_DELAY_MS)
             }
         }
     }
@@ -197,7 +201,7 @@ class UnlockController(private val activity: FragmentActivity) {
     } catch (unreachable: IOException) {
         false
     } catch (refused: UnlockFailure) {
-        false
+        refused.code == REVOKED
     }
 
     private fun showProgress(message: String) {
@@ -223,6 +227,8 @@ class UnlockController(private val activity: FragmentActivity) {
     private companion object {
         const val LONG_POLL_READ_MS = 35_000
         const val RETRY_DELAY_MS = 3_000L
+        const val REVOKED_RETRY_DELAY_MS = 30_000L
+        const val REVOKED = "REVOKED"
         const val RESULT_POLLS = 3
         const val CONSUMED = "consumed"
         const val LOGON_SUCCEEDED = "logon_succeeded"

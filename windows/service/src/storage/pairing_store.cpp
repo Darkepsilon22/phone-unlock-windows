@@ -71,21 +71,63 @@ PairingStore::PairingStore(std::wstring directory) : directory_(std::move(direct
 HRESULT PairingStore::Save(const Pairing& pairing)
 {
     const HRESULT hr = WriteFileAtomically(PathFor(pairing.pairingId), Serialize(pairing));
-    if (SUCCEEDED(hr))
+    if (FAILED(hr))
     {
-        std::lock_guard lock(mutex_);
-        pairings_.push_back(pairing);
+        return hr;
     }
-    return hr;
+    std::lock_guard lock(mutex_);
+    for (const Pairing& previous : pairings_)
+    {
+        if (crypto::ConstantTimeEquals(previous.transportFingerprint, pairing.transportFingerprint) &&
+            previous.pairingId != pairing.pairingId)
+        {
+            DeleteFileW(PathFor(previous.pairingId).c_str());
+            LogLine(L"pairing replaced for the same phone");
+        }
+    }
+    std::erase_if(pairings_, [&pairing](const Pairing& previous) {
+        return crypto::ConstantTimeEquals(previous.transportFingerprint, pairing.transportFingerprint);
+    });
+    pairings_.push_back(pairing);
+    return S_OK;
+}
+
+HRESULT PairingStore::Remove(const cbor::Bytes& pairingId)
+{
+    std::lock_guard lock(mutex_);
+    const auto match = std::find_if(pairings_.begin(), pairings_.end(),
+        [&pairingId](const Pairing& pairing) { return pairing.pairingId == pairingId; });
+    if (match == pairings_.end())
+    {
+        return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    }
+    if (!DeleteFileW(PathFor(pairingId).c_str()) && GetLastError() != ERROR_FILE_NOT_FOUND)
+    {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+    pairings_.erase(match);
+    return S_OK;
+}
+
+std::vector<Pairing> PairingStore::All()
+{
+    std::lock_guard lock(mutex_);
+    return pairings_;
 }
 
 std::optional<Pairing> PairingStore::FindByTransport(const crypto::Digest& fingerprint)
 {
     std::lock_guard lock(mutex_);
-    const auto match = std::find_if(pairings_.begin(), pairings_.end(), [&fingerprint](const Pairing& pairing) {
-        return crypto::ConstantTimeEquals(pairing.transportFingerprint, fingerprint);
-    });
-    return match == pairings_.end() ? std::nullopt : std::optional<Pairing>(*match);
+    std::optional<Pairing> newest;
+    for (const Pairing& pairing : pairings_)
+    {
+        if (crypto::ConstantTimeEquals(pairing.transportFingerprint, fingerprint) &&
+            (!newest || pairing.createdAt >= newest->createdAt))
+        {
+            newest = pairing;
+        }
+    }
+    return newest;
 }
 
 std::optional<Pairing> PairingStore::FindByAccount(const std::wstring& sid)

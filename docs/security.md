@@ -30,7 +30,7 @@ Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 |---|---|---|
 | S01 rejeu | Fait (mode téléphone) | `request_id` et nonce aléatoires signés, 30 s monotones, consommation unique, une demande active par compte ; rejeu refusé (tests et VM) |
 | S02 usurpation | Partiel | Empreintes épinglées, TLS 1.3 mutuel, code à 6 chiffres (côté PC fait, non validé en VM) |
-| S03 téléphone perdu | Partiel | Biométrie par opération (validée sur Pixel 5) ; révocation à réaliser |
+| S03 téléphone perdu | Fait | Biométrie par opération (validée sur Pixel 5) ; révocation immédiate depuis le PC (`revoke`, réservée aux administrateurs) |
 | S04 commande forgée | Fait (mode téléphone) | Signature ECDSA vérifiée par le PC sur la demande qu'il reconstruit lui-même ; champ modifié ou signature falsifiée refusés (tests) |
 | S05 mauvais compte | Fait (mode téléphone) | SID et `context_id` de la tuile signés et revérifiés ; un nouvel écran de verrouillage invalide la demande (tests) |
 | S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret |

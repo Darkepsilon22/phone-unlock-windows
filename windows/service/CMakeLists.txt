@@ -9,6 +9,7 @@ add_library(PhoneUnlockServiceCore STATIC
     src/admin/current_user.cpp
     src/admin/local_endpoints.cpp
     src/admin/pair_command.cpp
+    src/admin/phones_command.cpp
     src/admin/qr_console.cpp
     src/admin/service_client.cpp
     src/crypto/crypto.cpp

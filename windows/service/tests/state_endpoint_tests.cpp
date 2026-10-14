@@ -92,4 +92,15 @@ TEST(StateRefusesMalformedQueries)
     CHECK(fixture.endpoint.Handle(fixture.Request(L"?other=1")).status == 400);
     CHECK(fixture.endpoint.Handle(fixture.Request(L"?since=99999999999999999999999")).status == 400);
 }
+
+TEST(RevokedPhoneIsRefusedAtOnce)
+{
+    Fixture fixture;
+    CHECK(fixture.endpoint.Handle(fixture.Request(L"")).status == 200);
+    CHECK(SUCCEEDED(fixture.pairings.Remove(cbor::Bytes(16, 1))));
+    const HttpResponse response = fixture.endpoint.Handle(fixture.Request(L""));
+    CHECK(response.status == 403);
+    std::optional<cbor::Value> holder = cbor::Decode(response.body);
+    CHECK(*cbor::AsText(cbor::Find(*cbor::AsMap(&*holder), 1)) == "REVOKED");
+}
 }
