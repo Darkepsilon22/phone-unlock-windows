@@ -16,6 +16,9 @@ $dataDirectory = Join-Path $env:ProgramData 'PhoneUnlock'
 $secretsDirectory = Join-Path $dataDirectory 'secrets'
 $logsDirectory = Join-Path $dataDirectory 'logs'
 $stateDirectory = Join-Path $dataDirectory 'state'
+$pairingsDirectory = Join-Path $stateDirectory 'pairings'
+$tileLogsDirectory = Join-Path $dataDirectory 'tile-logs'
+$legacyTileLogsDirectory = Join-Path $env:ProgramData 'PhoneUnlockProto'
 $port = 47863
 $urlPrefix = "https://+:$port/v1/"
 $bindingAddress = "0.0.0.0:$port"
@@ -57,6 +60,23 @@ function Assert-RestrictedAccess([string]$path, [string[]]$allowedSids, [int]$ri
             throw "Droits inattendus sur $path pour $($rule.IdentityReference.Value)"
         }
     }
+}
+
+function Assert-TrustedFolder([string]$path) {
+    if (-not (Test-Path -LiteralPath $path)) { return }
+    if ([IO.File]::GetAttributes($path) -band [IO.FileAttributes]::ReparsePoint) {
+        throw "Refusé : $path est un lien vers un autre emplacement. Vérifie-le, supprime-le, puis relance l'installation."
+    }
+    $owner = (Get-Acl -LiteralPath $path).GetOwner([Security.Principal.SecurityIdentifier]).Value
+    if ($owner -notin $systemSid, $administratorsSid) {
+        throw "Refusé : $path n'a pas été créé par un administrateur (propriétaire $owner). Vérifie son contenu, supprime-le, puis relance l'installation."
+    }
+}
+
+function Set-FolderAccess([string]$path, [string[]]$grants, [string[]]$allowedSids) {
+    New-Item -ItemType Directory -Force $path | Out-Null
+    Invoke-Native "ACL de $path" { icacls $path /inheritance:r /grant:r @grants }
+    Assert-RestrictedAccess $path $allowedSids $anyRight
 }
 
 function Add-TlsBinding {
@@ -111,7 +131,17 @@ $hashes = Get-PackageHashes
 Assert-FileHash $sourceExecutable $hashes["$serviceName.exe"]
 Assert-FileHash $sourceLibrary $hashes["$providerName.dll"]
 
+foreach ($path in $dataDirectory, $secretsDirectory, $logsDirectory, $stateDirectory, $pairingsDirectory, $tileLogsDirectory) {
+    Assert-TrustedFolder $path
+}
+
 $existingService = Get-Service $serviceName -ErrorAction SilentlyContinue
+if (-not $existingService) {
+    $leftovers = $secretsDirectory, $stateDirectory | Where-Object { Test-Path $_ }
+    if ($leftovers) {
+        throw "Refusé : données d'une installation précédente présentes ($($leftovers -join ', ')). Lance uninstall.ps1, puis relance l'installation."
+    }
+}
 if ($existingService -and (Test-Path $serviceExecutable)) {
     $installedVersion = (Get-Item $serviceExecutable).VersionInfo.ProductVersion
     if (-not $installedVersion) { $installedVersion = 'une version sans numéro' }
@@ -151,16 +181,17 @@ try {
     }
     $serviceSid = (New-Object Security.Principal.NTAccount $serviceAccount).Translate([Security.Principal.SecurityIdentifier]).Value
 
-    $newDataFolders = $secretsDirectory, $stateDirectory | Where-Object { -not (Test-Path $_) }
+    $newDataFolders = $secretsDirectory, $stateDirectory, $tileLogsDirectory | Where-Object { -not (Test-Path $_) }
     if ($newDataFolders) {
         $undo.Push({ Remove-Item $newDataFolders -Recurse -Force -ErrorAction SilentlyContinue })
     }
+    $administration = "*${systemSid}:(OI)(CI)F", "*${administratorsSid}:(OI)(CI)F"
+    Set-FolderAccess $dataDirectory ($administration + "${serviceAccount}:(RX)") @($systemSid, $administratorsSid, $serviceSid)
     foreach ($path in $secretsDirectory, $logsDirectory, $stateDirectory) {
-        New-Item -ItemType Directory -Force $path | Out-Null
-        Invoke-Native "ACL de $path" { icacls $path /inheritance:r /grant:r "*${systemSid}:(OI)(CI)F" "*${administratorsSid}:(OI)(CI)F" "${serviceAccount}:(OI)(CI)M" }
-        Assert-RestrictedAccess $path @($systemSid, $administratorsSid, $serviceSid) $anyRight
+        Set-FolderAccess $path ($administration + "${serviceAccount}:(OI)(CI)M") @($systemSid, $administratorsSid, $serviceSid)
     }
-    New-Item -ItemType Directory -Force (Join-Path $stateDirectory 'pairings') | Out-Null
+    Set-FolderAccess $tileLogsDirectory $administration @($systemSid, $administratorsSid)
+    New-Item -ItemType Directory -Force $pairingsDirectory | Out-Null
 
     $certificate = Get-ChildItem Cert:\LocalMachine\My | Where-Object Subject -eq $certificateSubject | Select-Object -First 1
     if ($certificate) {
@@ -236,6 +267,7 @@ catch {
 }
 
 Remove-Item $previousExecutable -Force -ErrorAction SilentlyContinue
+if (Test-Path -LiteralPath $legacyTileLogsDirectory) { cmd.exe /c rmdir /s /q "$legacyTileLogsDirectory" }
 Get-Service $serviceName | Format-Table Name, Status, StartType -AutoSize
 "Version $version installée. Empreinte du certificat : $($certificate.Thumbprint)"
 'Verrouille la session (Windows + L) pour voir la tuile Téléphone.'

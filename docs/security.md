@@ -24,6 +24,18 @@ Le téléphone n'accepte que le PC dont l'empreinte figure dans le QR code : son
 
 Aucun secret n'est écrit dans les journaux ni passé en argument de processus.
 
+### Dossiers de données
+
+Tout utilisateur peut créer des dossiers dans `C:\ProgramData`. Avant la correction du 14/10/2026, un compte standard présent avant l'installation pouvait créer `ProgramData\PhoneUnlock` à l'avance pour en rester propriétaire, puis remplacer `state` par un dossier à lui contenant une fausse association ; il pouvait aussi faire de `ProgramData\PhoneUnlockProto`, où la tuile écrivait son journal en tant que SYSTEM, un lien vers un autre emplacement. Désormais :
+
+| Dossier | Droits |
+|---|---|
+| `ProgramData\PhoneUnlock` | SYSTEM et Administrateurs ; service en lecture ; héritage coupé |
+| `secrets`, `state`, `logs` | SYSTEM et Administrateurs ; service en modification |
+| `tile-logs` (journal de la tuile) | SYSTEM et Administrateurs seulement, pour que le service ne puisse pas y placer de lien |
+
+L'installeur refuse de continuer, sans rien modifier, si l'un de ces dossiers est un lien ou n'appartient ni à SYSTEM ni aux Administrateurs, et refuse une installation neuve si `secrets` ou `state` existent déjà. Les programmes ne créent plus aucun dossier eux-mêmes. L'ancien dossier `PhoneUnlockProto` est supprimé sans suivre les liens (`rmdir`). Vérifié en VM avec un compte standard : création refusée dans ces dossiers, installation refusée sur un dossier pré-créé par ce compte puis sur un lien.
+
 La clé de signature de l'APK (`%USERPROFILE%\.phoneunlock\release.jks`, PKCS12, RSA 4096) reste hors du dépôt ; son mot de passe est tapé à chaque signature. Une autre clé empêche toute mise à jour de l'application installée : il faut alors la désinstaller, ce qui efface ses clés, révoquer le téléphone sur le PC puis l'associer à nouveau.
 
 ## Menaces du cahier des charges
@@ -35,7 +47,7 @@ La clé de signature de l'APK (`%USERPROFILE%\.phoneunlock\release.jks`, PKCS12,
 | S03 téléphone perdu | Fait | Biométrie par opération (validée sur Pixel 5) ; révocation immédiate depuis le PC (`revoke`, réservée aux administrateurs), validée en VM |
 | S04 commande forgée | Fait (mode téléphone) | Signature ECDSA vérifiée par le PC sur la demande qu'il reconstruit lui-même ; champ modifié ou signature falsifiée refusés (tests) |
 | S05 mauvais compte | Fait (mode téléphone) | SID et `context_id` de la tuile signés et revérifiés ; un nouvel écran de verrouillage invalide la demande (tests) |
-| S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret |
+| S06 vol du secret | Fait | DPAPI, ACL, compte de service dédié, journaux sans secret ; dossier `ProgramData\PhoneUnlock` protégé lui aussi, propriétaire et liens contrôlés à l'installation (voir « Dossiers de données ») |
 | S07 détournement de l'IPC | Fait | Deux canaux à ACL distinctes, vérification du serveur par la tuile, échec fermé si le descripteur de sécurité ne peut pas être construit |
 | S08 saturation | Fait | 16 Ko, 8 requêtes simultanées, 3 essais d'association, 3 demandes de déverrouillage par minute et par compte (VM) |
 | S09 mise à jour malveillante | Fait | Empreintes SHA-256 vérifiées par l'installeur avant et après copie, fichiers modifiables seulement par les administrateurs (droits contrôlés), compilation de test refusée hors VM, annulation complète en cas d'échec ; APK release signé (schéma v3) avec une clé locale hors dépôt, non débogable (D11, VM et Pixel 5) |

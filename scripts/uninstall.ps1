@@ -24,6 +24,8 @@ Get-NetFirewallRule -DisplayName 'PhoneUnlock (réseau local)' -ErrorAction Sile
 Get-ChildItem Cert:\LocalMachine\My | Where-Object Subject -eq 'CN=PhoneUnlock PC' | Remove-Item
 Remove-Item (Join-Path $dataDirectory 'secrets'), (Join-Path $dataDirectory 'state') -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $installDirectory -Recurse -Force -ErrorAction SilentlyContinue
+$legacyTileLogsDirectory = Join-Path $env:ProgramData 'PhoneUnlockProto'
+if (Test-Path -LiteralPath $legacyTileLogsDirectory) { cmd.exe /c rmdir /s /q "$legacyTileLogsDirectory" }
 
 'Tuile, service, liaison TLS, pare-feu, certificat, associations et secrets retirés.'
 if ($libraryLoaded) {

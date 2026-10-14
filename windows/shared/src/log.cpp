@@ -8,7 +8,6 @@ namespace
 constexpr size_t MaxLineLength = 640;
 constexpr size_t MaxUtf8Length = MaxLineLength * 3;
 
-wchar_t logDirectory[MAX_PATH] = {};
 wchar_t logPath[MAX_PATH] = {};
 
 bool FormatLine(wchar_t (&line)[MaxLineLength], const wchar_t* format, va_list args)
@@ -35,7 +34,6 @@ void AppendUtf8(const wchar_t* line)
         return;
     }
 
-    CreateDirectoryW(logDirectory, nullptr);
     HANDLE file = CreateFileW(logPath, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
         nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (file == INVALID_HANDLE_VALUE)
@@ -50,6 +48,7 @@ void AppendUtf8(const wchar_t* line)
 
 void ConfigureLog(PCWSTR directory, PCWSTR fileName)
 {
+    wchar_t logDirectory[MAX_PATH] = {};
     if (ExpandEnvironmentStringsW(directory, logDirectory, MAX_PATH) == 0 ||
         swprintf_s(logPath, L"%s\\%s", logDirectory, fileName) < 0)
     {

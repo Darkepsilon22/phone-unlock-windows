@@ -3,7 +3,7 @@
 
 namespace
 {
-constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlockProto";
+constexpr wchar_t LogDirectory[] = L"%ProgramData%\\PhoneUnlock\\tile-logs";
 constexpr wchar_t LogFileName[] = L"cp.log";
 constexpr ULONGLONG PendingLogonLifetime = 30'000;
 
