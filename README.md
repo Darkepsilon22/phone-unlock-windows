@@ -14,6 +14,7 @@ Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (c
 | [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
 | [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
 | [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
+| [docs/recette.md](docs/recette.md) | Rapport de recette : exigences, tests T01 à T26, anomalies, écarts |
 | [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D12) |
 | [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
 | [docs/third-party.md](docs/third-party.md) | Composants tiers et licences |
@@ -63,7 +64,7 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 - [x] L4 : service et tuile : coffre, canaux locaux, soumission automatique, serveur HTTPS en TLS 1.3, association, déverrouillage depuis le téléphone et depuis la tuile, validés en VM
 - [x] L4 bis : révocation d'un téléphone depuis le PC, validée en VM
 - [x] L5 : installeur avec annulation sur erreur, APK signé, diagnostic `status`, protection des dossiers de données, documentation
-- [ ] L6 : recette
+- [ ] L6 : recette en VM terminée ([docs/recette.md](docs/recette.md)) ; installation et vérifications sur le PC principal à faire
 
 ## Limitations connues
 
