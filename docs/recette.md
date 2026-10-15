@@ -36,12 +36,12 @@ Recette menée du 14 au 15 octobre 2026 dans la VM de test, avant toute installa
 
 | Test | Résultat |
 |---|---|
-| T01 Installation | Réussi en VM : installation neuve et mise à jour, connexion habituelle par PIN conservée |
+| T01 Installation | Réussi en VM (installation neuve et mise à jour) et sur le PC principal le 15/10/2026 ; connexion habituelle par PIN conservée |
 | T02 Compte non compatible | « Hello uniquement » finalement **compatible** (D12). Compte sans mot de passe et Smart App Control bloquant : non testables dans la VM (le compte Microsoft a un mot de passe, Smart App Control ne peut pas être réactivé) ; l'installeur contrôle Smart App Control |
 | T03 Association nominale | Réussi |
 | T04 QR expiré ou code différent | Réussi : QR expiré, QR étranger, refus sur le PC, empreinte annulée |
-| T05 Connexion après redémarrage | Réussi : connexion après déconnexion, avec « Hello uniquement » et protection LSA. Réseau avant ouverture de session et profil Public : à confirmer sur le PC principal |
-| T06 Sortie de veille | Réussi avec une mise en pause de la VM ; vraie veille à confirmer sur le PC principal |
+| T05 Connexion après redémarrage | Réussi en VM et sur le PC principal (Wi-Fi Public) : connexion après déconnexion avec « Hello uniquement », déverrouillage après redémarrage, Wi-Fi disponible dès l'écran de verrouillage |
+| T06 Sortie de veille | Réussi sur le PC principal (veille moderne) : session ouverte par une nouvelle demande ; résultat Windows non renvoyé (A4) |
 | T07 Biométrie réussie | Réussi : une autorisation et un résultat Windows par demande |
 | T08 Biométrie refusée ou annulée | Réussi : rien ne s'ouvre |
 | T09 Téléphone absent | Réussi : PIN et mot de passe toujours disponibles |
@@ -80,6 +80,7 @@ Recette menée du 14 au 15 octobre 2026 dans la VM de test, avant toute installa
 | A1 | Mineure | La demande lancée depuis la tuile n'était pas annulée quand on choisissait un autre compte | Corrigée et vérifiée (T14) |
 | A2 | Mineure | Après `history --clear`, `status` indique « depuis le démarrage du service » alors que c'est depuis l'effacement | Documentée |
 | A3 | Mineure | Le test automatique `SessionExpiresAfterTwoMinutes` porte encore l'ancien nom alors que la session dure 5 minutes (D9) | Ouverte, sans effet sur le produit |
+| A4 | Mineure | Après une veille moderne, Windows ouvre la session mais ne renvoie pas le résultat à la tuile, et le service ne reçoit aucun avis de session : pas de « Session ouverte » dans l'historique, et l'application attend 10 s avant de conclure | Ouverte, limite de Windows ; sans effet sur la sécurité ni sur l'ouverture |
 
 Aucune anomalie critique ou majeure n'est ouverte.
 
@@ -91,10 +92,8 @@ Aucune anomalie critique ou majeure n'est ouverte.
 - **Restauration du système** : introuvable depuis l'environnement de récupération, lente et incomplète (`install.md`, section 8.4) ; le retrait de la tuile depuis l'environnement de récupération est la méthode de secours principale.
 - **T11** : Windows accepte encore l'ancien mot de passe après un changement ; relancer `provision` après tout changement fait par sécurité.
 
-## Avant le PC principal (L6-4)
+## PC principal (L6-4)
 
-À faire sur le PC principal, avec l'accord explicite de l'utilisatrice et après un point de restauration :
+Installé le 15/10/2026 par l'utilisatrice, après acceptation écrite du risque principal (D13), vérification de sa clé de récupération BitLocker et création d'un point de restauration. Vérifié sur place : déverrouillage depuis l'application et depuis la tuile, PIN, connexion après déconnexion avec « Hello uniquement », redémarrage, veille moderne (A4). BitLocker est actif sur ce PC, sans effet constaté.
 
-1. Risque principal accepté par écrit le 15/10/2026 (D13).
-2. Installation avec `-AllowPhysicalMachine`, `provision`, association.
-3. Vérifications propres au matériel réel : vraie veille (T06), redémarrage avec réseau avant ouverture de session et profil Public (T05), « Hello uniquement » sans Internet (D12), changement d'heure (T23).
+Restent facultatifs : « Hello uniquement » sans Internet (box coupée) et changement d'heure (T23).

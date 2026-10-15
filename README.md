@@ -2,7 +2,7 @@
 
 Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (compte Microsoft) avec l'empreinte d'un téléphone Android, sur le réseau local et sans service cloud. Le téléphone signe une demande après biométrie, et une tuile Windows soumet alors le mot de passe du compte, conservé chiffré par un service local. Windows reste seul juge de l'ouverture de session.
 
-**État : prototype.** Ne pas installer sur un PC principal avant la recette (lot L6). Lire [docs/security.md](docs/security.md) puis [docs/install.md](docs/install.md) avant tout usage.
+**État : version 0.1.0, en service sur le PC principal depuis le 15/10/2026.** Lire [docs/security.md](docs/security.md) puis [docs/install.md](docs/install.md) avant tout usage.
 
 ## Documentation
 
@@ -64,7 +64,7 @@ Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâ
 - [x] L4 : service et tuile : coffre, canaux locaux, soumission automatique, serveur HTTPS en TLS 1.3, association, déverrouillage depuis le téléphone et depuis la tuile, validés en VM
 - [x] L4 bis : révocation d'un téléphone depuis le PC, validée en VM
 - [x] L5 : installeur avec annulation sur erreur, APK signé, diagnostic `status`, protection des dossiers de données, documentation
-- [ ] L6 : recette en VM terminée ([docs/recette.md](docs/recette.md)) ; installation et vérifications sur le PC principal à faire
+- [x] L6 : recette en VM ([docs/recette.md](docs/recette.md)), puis installation et vérifications sur le PC principal le 15/10/2026
 
 ## Limitations connues
 
