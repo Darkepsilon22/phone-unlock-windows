@@ -1,71 +1,138 @@
-# Empreinte : déverrouillage Windows par téléphone
+# PhoneUnlock for Windows
 
-Projet personnel et gratuit : ouvrir ou déverrouiller une session Windows 11 (compte Microsoft) avec l'empreinte d'un téléphone Android, sur le réseau local et sans service cloud. Le téléphone signe une demande après biométrie, et une tuile Windows soumet alors le mot de passe du compte, conservé chiffré par un service local. Windows reste seul juge de l'ouverture de session.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Windows 11](https://img.shields.io/badge/Windows-11%20x64-0078D6)
+![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84)
+![Version](https://img.shields.io/badge/version-0.1.0-informational)
 
-**État : version 0.1.0, en service sur le PC principal depuis le 15/10/2026.** Lire [docs/security.md](docs/security.md) puis [docs/install.md](docs/install.md) avant tout usage.
+Unlock or sign in to a Windows 11 session with the fingerprint of your Android phone, over your local network, with no cloud service and no account other than your own.
+
+The phone signs a one-time request after a strong biometric check. A local Windows service verifies that signature and hands the account password, kept encrypted on the PC, to a Windows sign-in tile. **Windows alone decides** whether the session opens; PhoneUnlock never bypasses a Windows security mechanism.
+
+> [!WARNING]
+> PhoneUnlock keeps your Microsoft account password **encrypted on the PC** so that it can submit it to Windows. Anyone who gains administrator or SYSTEM rights on that PC can recover it, and with it access your Microsoft account online. Read [the security model](docs/security.md) and accept this trade-off before installing. This is a personal project, provided as is, without warranty.
+
+## Features
+
+- **Two ways to unlock**: tap *Unlock* in the phone app, or click *Ask the phone* on the Windows sign-in tile and confirm a 4-digit match code on the phone.
+- **Strong biometrics, per request**: every unlock requires a fingerprint (Android Class 3) that authorizes an ECDSA P-256 signature over that exact request, with keys held in StrongBox when available.
+- **Live PC state** on the phone: locked, sign-in screen or signed in, and whether an unlock is possible right now.
+- **Works without Internet**: same Wi-Fi, or the phone's own hotspot with mobile data off.
+- **Nothing replaced**: your PIN, password and Windows Hello stay available on the sign-in screen at all times.
+- **Pairing by QR code** with a 6-digit code compared on both screens, then confirmed on the PC and by fingerprint.
+- **Administration from the PC**: list and revoke phones, view or clear the history, and run a diagnostic `status`; pairing, revoking and clearing the history require the Windows account password.
+- **Installer with rollback**: integrity checks (SHA-256), access-control checks, and automatic undo if any step fails.
+
+## How it works
+
+```mermaid
+sequenceDiagram
+    participant P as Android app
+    participant S as PhoneUnlock service (PC)
+    participant T as Sign-in tile (LogonUI)
+    participant W as Windows
+    P->>S: Unlock request (mutual TLS 1.3, pinned keys)
+    S-->>P: One-time request: PC, account, nonce, 30 s expiry
+    P->>P: Fingerprint, then ECDSA signature of the request
+    P->>S: Signed proof
+    S->>S: Verify signature, context and expiry, consume once
+    S->>T: Account password (local pipe, SYSTEM only)
+    T->>W: Credential serialization
+    W-->>T: Logon result
+    T-->>S: Result, shown on the phone and in the history
+```
+
+| Component | Technology | Role |
+|---|---|---|
+| `android/` | Kotlin, Jetpack Compose, Android Keystore, BiometricPrompt, CameraX | Pairing, PC state, biometric signing |
+| `windows/service/` | C++20, Windows service, `http.sys`, CNG, DPAPI | Pairing, request verification, encrypted password store, admin commands |
+| `windows/credential-provider/` | C++20, Credential Provider V2 (COM) | The *Phone* tile on the sign-in screen |
+| `protocol/SPEC.md` | Deterministic CBOR over HTTPS | Phone ↔ PC protocol |
+
+## Security model
+
+- **Transport**: HTTPS on the local subnet only (port 47863), TLS 1.3 required, mutual authentication, both certificates pinned at pairing.
+- **Proof**: a signature over the full request (PC, account SID, sign-in screen context, nonce, expiry), single use, rejected if replayed, late or bound to another screen.
+- **Secrets**: the password is encrypted with DPAPI under a dedicated virtual service account; data folders are restricted to SYSTEM, Administrators and the service, and checked at install time.
+- **Limits**: 3 unlock requests per minute per account, 16 KB per message, at most 8 concurrent requests.
+- **Threat model**: twelve threats from the specification, with their status and evidence, in [docs/security.md](docs/security.md).
+
+## Requirements
+
+**To run**
+
+- Windows 11 x64 with a Microsoft account that has a password (used once online on this PC)
+- Smart App Control turned off (the tile is not signed by a recognized authority)
+- An Android 11+ phone with a Class 3 (strong) fingerprint sensor
+- PC and phone on the same local network
+
+**To build** (all free)
+
+- Visual Studio Build Tools 2022 (MSVC, Windows SDK, CMake) and [vcpkg](https://github.com/microsoft/vcpkg)
+- Android SDK and JDK 21 (Gradle comes with the wrapper)
+
+## Build
+
+```powershell
+scripts\build-windows.ps1     # builds the service and the tile, runs the tests, writes build\package\PhoneUnlock-<version>
+scripts\sign-apk.ps1          # builds the release APK and signs it with your own local key
+```
+
+`build-windows.ps1` reads vcpkg from `VCPKG_ROOT`. The Android unit tests run with `android\gradlew.bat testDebugUnitTest`.
+
+## Install
+
+Test in a virtual machine first. The installer refuses physical machines unless you pass `-AllowPhysicalMachine`.
+
+```powershell
+# In an elevated PowerShell, from build\package\PhoneUnlock-<version>
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -AllowPhysicalMachine
+& "C:\Program Files\PhoneUnlock\PhoneUnlockService.exe" provision             # stores your password, verified by Windows
+& "C:\Program Files\PhoneUnlock\PhoneUnlockService.exe" pair --endpoint <PC address>:47863
+```
+
+Then install the APK on the phone (`adb install -r PhoneUnlock-<version>.apk`), scan the QR code and confirm. The full guide covers updates, diagnostics, uninstallation and **recovery** if you can no longer sign in: [docs/install.md](docs/install.md).
+
+## Project status
+
+Version 0.1.0 is in daily use on its author's PC. Every milestone of the specification is done:
+
+| Milestone | Scope |
+|---|---|
+| L0–L1 | Tooling, test VM, Windows feasibility with a Microsoft account, online and offline |
+| L2 | Protocol specification and threat model |
+| L3 | Android app |
+| L4 | Windows service and sign-in tile |
+| L5 | Installer with rollback, signed APK, diagnostics, documentation |
+| L6 | Acceptance testing in a VM, then on a physical PC |
+
+Acceptance results, open issues and known gaps are in [docs/recette.md](docs/recette.md). The automated suites (102 C++ tests, 47 Kotlin tests) pass. Tested on Windows 11 Home (builds 26200 and 26300) and a Google Pixel 5 (Android 14); other phones have not been tested.
+
+## Known limitations
+
+- The phone app must be open when you unlock; it does not run in the background.
+- Being on the same network does not prove proximity: an unlock started from the phone opens the session for whoever is in front of the PC.
+- After a Microsoft account password change, run `provision` again.
+- After *modern standby*, Windows opens the session but does not report the result, so the app waits about 10 seconds.
 
 ## Documentation
 
-| Document | Contenu |
+The detailed documentation is written in French.
+
+| Document | Content |
 |---|---|
-| [docs/Cahier_des_charges.pdf](docs/Cahier_des_charges.pdf) | Besoin et exigences (v1.1) |
-| [protocol/SPEC.md](protocol/SPEC.md) | Protocole téléphone ↔ PC |
-| [docs/install.md](docs/install.md) | Installation, mise à jour, diagnostic, désinstallation, récupération |
-| [docs/architecture.md](docs/architecture.md) | Modules, flux, frontières de sécurité |
-| [docs/security.md](docs/security.md) | Modèle de menace, secrets, limites, récupération |
-| [docs/testing.md](docs/testing.md) | Tests automatisés et procédures manuelles |
-| [docs/recette.md](docs/recette.md) | Rapport de recette : exigences, tests T01 à T26, anomalies, écarts |
-| [docs/decisions.md](docs/decisions.md) | Écarts au cahier et choix techniques (D1 à D13) |
-| [docs/rapport-jalon-L1.md](docs/rapport-jalon-L1.md) | Preuve de faisabilité Windows |
-| [docs/third-party.md](docs/third-party.md) | Composants tiers et licences |
+| [docs/install.md](docs/install.md) | Installation, updates, diagnostics, uninstallation, recovery |
+| [docs/security.md](docs/security.md) | Threat model, secrets, limits |
+| [docs/architecture.md](docs/architecture.md) | Modules, flows, security boundaries |
+| [protocol/SPEC.md](protocol/SPEC.md) | Phone ↔ PC protocol |
+| [docs/decisions.md](docs/decisions.md) | Design decisions and deviations from the specification |
+| [docs/testing.md](docs/testing.md) | Automated tests and manual procedures with evidence |
+| [docs/recette.md](docs/recette.md) | Acceptance report |
+| [docs/third-party.md](docs/third-party.md) | Third-party components and licenses |
+| [docs/Cahier_des_charges.pdf](docs/Cahier_des_charges.pdf) | Original specification |
 
-## Structure
+## License
 
-| Dossier | Contenu |
-|---|---|
-| `android/` | Application Kotlin, Jetpack Compose, AndroidX Biometric |
-| `windows/shared/` | Code C++ commun : canal local, journal, mémoire effacée |
-| `windows/credential-provider/` | Tuile Windows (DLL COM chargée par LogonUI) |
-| `windows/service/` | Service Windows : coffre, association, API HTTPS, commandes d'administration, tests |
-| `protocol/` | Spécification du protocole |
-| `scripts/` | Compilation Windows, signature de l'APK, installeur, désinstalleur, essais de robustesse et de performance |
-| `docs/` | Documentation |
+PhoneUnlock is released under the [MIT License](LICENSE). Third-party components keep their own licenses (MIT, Apache 2.0, BSD-3-Clause), listed in [docs/third-party.md](docs/third-party.md).
 
-## Prérequis (gratuits)
-
-- Windows 11 x64, VS Code
-- Visual Studio Build Tools 2022 (MSVC, Windows SDK, CMake)
-- vcpkg : chemin donné par la variable `VCPKG_ROOT` (par défaut `E:\dev\vcpkg` dans le script)
-- Android Studio ou SDK Android, JDK 21 ; Gradle est fourni par le wrapper
-- VirtualBox pour les tests Windows (pas d'Hyper-V)
-- Un téléphone Android 11 ou plus avec empreinte de classe forte
-
-## Compiler et tester
-
-```powershell
-scripts\build-windows.ps1                  # compile la tuile et le service, lance les tests, prépare build\package\PhoneUnlock-<version>
-scripts\build-windows.ps1 -TestCommands    # variante de test (version suffixée -test) avec la commande authorize, refusée hors VM
-
-cd android
-.\gradlew.bat assembleDebug testDebugUnitTest
-cd ..
-scripts\sign-apk.ps1                       # compile la version release et la signe avec ta clé locale
-adb install -r build\package\PhoneUnlock-<version>.apk   # téléphone branché, débogage USB activé
-```
-
-Ces commandes sont aussi disponibles dans VS Code (Terminal → Exécuter la tâche).
-
-## Avancement
-
-- [x] L0 : outils, VM de test
-- [x] L1 : faisabilité Windows, compte Microsoft en ligne et hors ligne ; la condition « Hello uniquement désactivé » a été levée le 14/10/2026 (D12)
-- [x] L2 : spécification du protocole
-- [x] L3 : application Android : clés StrongBox, association, état du PC en temps réel, déverrouillage par bouton et par tuile, validés sur Pixel 5
-- [x] L4 : service et tuile : coffre, canaux locaux, soumission automatique, serveur HTTPS en TLS 1.3, association, déverrouillage depuis le téléphone et depuis la tuile, validés en VM
-- [x] L4 bis : révocation d'un téléphone depuis le PC, validée en VM
-- [x] L5 : installeur avec annulation sur erreur, APK signé, diagnostic `status`, protection des dossiers de données, documentation
-- [x] L6 : recette en VM ([docs/recette.md](docs/recette.md)), puis installation et vérifications sur le PC principal le 15/10/2026
-
-## Limitations connues
-
-« Hello uniquement » peut rester activé (D12, à confirmer sur le PC principal). Le mot de passe du compte est conservé chiffré sur le PC. L'application doit être ouverte pendant le déverrouillage. Détails dans [docs/security.md](docs/security.md) ; secours dans [docs/install.md](docs/install.md), section 8.
+PhoneUnlock is an independent project, not affiliated with or endorsed by Microsoft or Google. Windows, Windows Hello and Android are trademarks of their respective owners.
