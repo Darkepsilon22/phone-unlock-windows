@@ -19,7 +19,7 @@ Personne n'a besoin de connaître ton mot de passe, ton PIN ou ton empreinte : t
 Sur un **vrai PC**, avant la première installation :
 
 1. Valider d'abord la même version dans la VM de test (`docs/testing.md`).
-2. Créer un point de restauration : `Checkpoint-Computer -Description 'Avant PhoneUnlock' -RestorePointType APPLICATION_INSTALL` (la protection du système doit être active sur C:).
+2. Créer un point de restauration, en dernier recours (section 8.4) : `Enable-ComputerRestore -Drive 'C:\'` puis `Checkpoint-Computer -Description 'Avant PhoneUnlock' -RestorePointType APPLICATION_INSTALL`, et vérifier avec `Get-ComputerRestorePoint`.
 3. Si BitLocker est actif, vérifier que la clé de récupération est accessible depuis un autre appareil (compte Microsoft, rubrique Appareils). Elle sera demandée pour toute réparation hors de Windows.
 
 ## 2. Préparer les paquets (PC de développement)
@@ -177,21 +177,29 @@ Elle disparaît au prochain verrouillage ; le service continue de tourner. Pour 
 
 ### 8.4 Impossible d'ouvrir une session Windows
 
-Ce cas ne devrait pas se produire, puisque les autres méthodes restent disponibles. S'il arrive :
+Ce cas ne devrait pas se produire, puisque les autres méthodes restent disponibles. S'il arrive, **retirer uniquement la tuile** depuis l'environnement de récupération (vérifié en VM le 15/10/2026) :
 
-1. Sur l'écran de connexion, maintenir Maj et choisir Marche/Arrêt, Redémarrer ; puis Dépannage, Options avancées.
-2. **Restauration du système**, en choisissant le point « Avant PhoneUnlock » (section 1). C'est la voie la plus simple.
-3. Sinon, **Invite de commandes**, pour retirer uniquement la tuile (la lettre du disque Windows peut être différente de C: dans cet environnement) :
+1. Sur l'écran de connexion, Marche/Arrêt, puis **maintenir Maj** en cliquant sur Redémarrer ; ensuite Dépannage, Options avancées, **Invite de commandes**. Windows peut demander le mot de passe d'un compte administrateur.
+2. Vérifier la lettre du disque Windows, qui peut différer de C: dans cet environnement : `dir C:\Windows\System32\config\SOFTWARE`.
+3. Taper, sans copier-coller (indisponible ici) et en écrivant bien **Authentication** à l'anglaise :
 
    ```
    reg load HKLM\HorsLigne C:\Windows\System32\config\SOFTWARE
    reg delete "HKLM\HorsLigne\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{512D55BA-432F-42D6-95EF-8071913597AA}" /f
    reg unload HKLM\HorsLigne
+   exit
    ```
 
-   Puis redémarrer et se connecter avec le PIN ou le mot de passe.
+   Plus simple à la souris : après `reg load`, taper `regedit`, ouvrir HKEY_LOCAL_MACHINE, HorsLigne, Microsoft, Windows, CurrentVersion, Authentication, Credential Providers, vérifier que la clé `{512D55BA-…}` a pour valeur PhoneUnlockProtoCP, la supprimer, fermer, puis `reg unload HKLM\HorsLigne`. Ne supprimer aucune autre clé : ce sont celles du PIN, du mot de passe et de Windows Hello.
+4. Choisir Continuer. Le premier démarrage peut rester une à deux minutes sur un écran bleu. La tuile a disparu ; se connecter avec le PIN ou le mot de passe. Le service continue de tourner (`status` : « tuile non enregistrée »). Pour remettre la tuile : relancer `install.ps1`.
 
-Si le disque est chiffré par BitLocker, sa clé de récupération est demandée avant ces étapes. **Ces deux procédures n'ont pas encore été essayées** : elles seront vérifiées dans la VM pendant la recette (lot L6).
+**En dernier recours, restauration du système** vers le point « Avant PhoneUnlock » (section 1). Vérifié en VM le 15/10/2026, avec trois limites :
+
+- depuis l'environnement de récupération, elle n'a trouvé **aucun point de restauration** (`0x80004005`) alors qu'il existait ; elle n'a fonctionné que lancée depuis Windows (`rstrui.exe`), donc seulement si une session s'ouvre encore ;
+- elle dure plus de 10 minutes, et le redémarrage final a dû être forcé dans la VM ;
+- elle retire le service, la tuile, la DLL, le certificat, la règle de pare-feu et la liaison TLS, mais **laisse** `C:\Program Files\PhoneUnlock` et `C:\ProgramData\PhoneUnlock`, y compris `secrets`. Lancer ensuite `uninstall.ps1` depuis le dossier du paquet pour terminer le ménage ; tant que ces restes existent, `install.ps1` refuse une installation neuve.
+
+Si le disque est chiffré par BitLocker, sa clé de récupération est demandée avant toute étape dans l'environnement de récupération.
 
 ### 8.5 Dans la VM de test
 
