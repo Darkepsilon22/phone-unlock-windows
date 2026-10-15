@@ -95,6 +95,6 @@ Aucune anomalie critique ou majeure n'est ouverte.
 
 À faire sur le PC principal, avec l'accord explicite de l'utilisatrice et après un point de restauration :
 
-1. Décision écrite sur le risque principal : mot de passe du compte Microsoft conservé chiffré et récupérable par un administrateur (`security.md`).
+1. Risque principal accepté par écrit le 15/10/2026 (D13).
 2. Installation avec `-AllowPhysicalMachine`, `provision`, association.
 3. Vérifications propres au matériel réel : vraie veille (T06), redémarrage avec réseau avant ouverture de session et profil Public (T05), « Hello uniquement » sans Internet (D12), changement d'heure (T23).

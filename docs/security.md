@@ -6,7 +6,7 @@ La biométrie autorise une clé du téléphone, la clé autorise une demande pr�
 
 ## Risque principal accepté
 
-Le mot de passe du compte Microsoft est **récupérable par le service** : il est chiffré par DPAPI dans le contexte du compte de service, et seul ce compte peut le déchiffrer. Un attaquant qui obtient les droits administrateur ou SYSTEM peut le récupérer, et donc accéder au compte Microsoft en ligne, pas seulement au PC. Ce risque est inhérent à l'architecture choisie dans le cahier des charges et doit être accepté explicitement avant toute utilisation sur le PC principal.
+Le mot de passe du compte Microsoft est **récupérable par le service** : il est chiffré par DPAPI dans le contexte du compte de service, et seul ce compte peut le déchiffrer. Un attaquant qui obtient les droits administrateur ou SYSTEM peut le récupérer, et donc accéder au compte Microsoft en ligne, pas seulement au PC. Ce risque est inhérent à l'architecture choisie dans le cahier des charges et doit être accepté explicitement avant toute utilisation sur le PC principal. **Accepté par l'utilisatrice le 15/10/2026 (D13).**
 
 ## Clés et secrets
 

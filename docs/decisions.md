@@ -102,3 +102,11 @@ L'application affiche l'état du PC tant qu'elle est ouverte : verrouillé, sess
 **Décision** : la condition « Hello uniquement désactivé » est levée. L'installeur le signale seulement, à titre d'information. La recette continue avec ce réglage activé, comme sur le PC principal.
 
 **Limites** : vérifié avec Internet seulement. Le cas sans Internet et le PC principal (version 26300) restent à vérifier pendant la recette (L6). Si Windows refuse l'ouverture avec `0xC000015B`, désactiver le réglage : Paramètres, Comptes, Options de connexion.
+
+## D13 : risque principal accepté pour le PC principal (15/10/2026)
+
+**Décision de l'utilisatrice** : elle accepte que le mot de passe de son compte Microsoft soit conservé chiffré sur le PC principal, récupérable par quiconque y obtiendrait les droits administrateur ou SYSTEM, et donc utilisable pour accéder au compte Microsoft en ligne (`security.md`, « Risque principal accepté »).
+
+**Condition du cahier remplie** : « La conservation du secret Windows et les limites de protection ont été explicitement acceptées pour le périmètre livré. »
+
+**Ce que cette décision n'autorise pas** : l'installation sur le PC principal reste soumise à son accord explicite, donné au moment de l'installation, après un point de restauration (L6-4). Elle peut revenir sur cette décision à tout moment : `uninstall.ps1` retire le service et efface le mot de passe enregistré.
